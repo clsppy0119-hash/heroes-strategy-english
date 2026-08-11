@@ -1,0 +1,12 @@
+# 倉庫裡一律 LF。
+#
+# 不加這行的話，Windows 上 checkout 會換成 CRLF，任何逐位元組比對檔案內容的
+# 工具（例如 scripts/check-vocab-sync.mjs）在 Windows 上就會誤判成「不同步」，
+# 而 Linux 的 CI 完全看不出來。
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

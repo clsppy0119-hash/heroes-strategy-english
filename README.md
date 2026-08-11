@@ -60,6 +60,22 @@ scripts/         CI 用的兩支約束檢查
 
 相關：[#1 架構邊界與 LingoQuest 單向遷移](https://github.com/clsppy0119-hash/heroes-strategy-english/issues/1)
 
+## 測試場與數據
+
+v0.1 的驗收條件寫在 [#7](https://github.com/clsppy0119-hash/heroes-strategy-english/issues/7)，喊停條件是**亂猜跳題率超過三成就停下來重做設計，不要加內容**。
+
+測試者玩完之後，按畫面上的「匯出測試資料」拿到一份 JSON，然後：
+
+```bash
+pnpm analyze playtest/*.json
+```
+
+會算出五個數字並對照喊停條件：亂猜跳題率、作答時間分佈、連對長度分佈、單場放棄率、首次佔下三塊地耗時。
+
+「亂猜」的定義是**答錯且作答時間低於 800ms**——答對再快也不算，答錯但有花時間也不算，那是真的不會。800ms 這個門檻是拍腦袋定的，真人資料進來之後應該用作答時間分佈的左尾重新定。
+
+分析用的是遊戲裡同一份 `analyze()`，所以測試場上看到的數字跟事後算出來的一致。
+
 ## 文件
 
 | | |
