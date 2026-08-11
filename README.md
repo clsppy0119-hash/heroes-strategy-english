@@ -59,3 +59,15 @@ scripts/         CI 用的兩支約束檢查
 戰鬥結果由 `(初始狀態, seed, RULES_VERSION, 作答序列)` 完全決定。任何會改變戰鬥結果的規則調整都必須遞增 `src/core/rules.ts` 的 `RULES_VERSION`——沒有版本號就無法判斷一場舊戰鬥為什麼重現不出來，是資料壞了還是規則改了。
 
 相關：[#1 架構邊界與 LingoQuest 單向遷移](https://github.com/clsppy0119-hash/heroes-strategy-english/issues/1)
+
+## 文件
+
+| | |
+| --- | --- |
+| [docs/MASTER_PLAN.md](docs/MASTER_PLAN.md) | 願景、核心循環、英文在遊戲裡的位置 |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | 為什麼改成縱切，舊 M1–M6 對到哪 |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 模組邊界與關鍵規則 |
+| [docs/DATA_MODEL.md](docs/DATA_MODEL.md) | 資料表與 RLS |
+| [docs/AI_DEVELOPMENT.md](docs/AI_DEVELOPMENT.md) | AI 使用標準與護欄 |
+| [docs/LINGOQUEST_MIGRATION.md](docs/LINGOQUEST_MIGRATION.md) | LingoQuest 單向遷移邊界 |
+| [docs/REVIEW.md](docs/REVIEW.md) | PR 說明與 review 要求 |
