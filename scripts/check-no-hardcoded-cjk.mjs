@@ -10,10 +10,16 @@ import { listFiles, positionAt, report, stripComments } from './lib/source-scan.
  * 等到真的要加第二種語言才回頭抽字串，等於全站掃一次；現在擋住成本接近零。
  *
  * 註解裡的中文不算（掃描前會先移掉註解），locale 檔本身也不掃。
+ *
+ * 題庫也不掃，理由不是「太麻煩」而是它不是同一種東西：
+ * UI 文案是介面語言，換語系就整包換；題庫的中文是學習素材的一部分，
+ * 跟著 content_version 走。之後若要做英日版，題庫的目標語言是另一個問題，
+ * 不是把 zh 欄位丟進 locale 檔就能解決的。
  */
 
 const ROOT = 'src';
 const IGNORE = ['i18n/locales'];
+const IGNORE_FILES = ['content/vocab.generated.ts'];
 const EXTENSIONS = ['.ts', '.tsx'];
 const TEST_FILE = /\.test\.tsx?$/;
 
@@ -24,7 +30,7 @@ const violations = [];
 
 for (const file of listFiles(ROOT, { extensions: EXTENSIONS, ignore: IGNORE })) {
   // 測試檔的敘述用中文寫比較讀得懂，且不會出現在畫面上。
-  if (TEST_FILE.test(file)) {
+  if (TEST_FILE.test(file) || IGNORE_FILES.includes(file)) {
     continue;
   }
 

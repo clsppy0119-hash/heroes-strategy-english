@@ -40,6 +40,10 @@ jobs:
       - name: Core stays portable
         run: pnpm check:core
 
+      # 改了 CSV 卻忘了跑 gen:vocab 不會有任何症狀，只是安靜地用舊題庫
+      - name: Vocab bank in sync with CSV
+        run: pnpm check:vocab
+
       - name: Test
         run: pnpm test
 
