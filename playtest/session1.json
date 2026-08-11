@@ -1,0 +1,2639 @@
+[
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458132208,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b1-2,1",
+   "tileId": "2,1",
+   "seed": 210724757,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458132210,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b1-2,1",
+   "round": 0,
+   "questionId": "v016"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458141317,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b1-2,1",
+   "round": 0,
+   "questionId": "v016",
+   "correct": false,
+   "elapsedMs": 9107,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458141318,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b1-2,1",
+   "round": 1,
+   "questionId": "v011"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458146391,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b1-2,1",
+   "round": 1,
+   "questionId": "v011",
+   "correct": false,
+   "elapsedMs": 5073,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458146392,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b1-2,1",
+   "round": 2,
+   "questionId": "v017"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458146881,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b1-2,1",
+   "round": 2,
+   "questionId": "v017",
+   "correct": false,
+   "elapsedMs": 489,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458146882,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b1-2,1",
+   "round": 3,
+   "questionId": "v018"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458147171,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b1-2,1",
+   "round": 3,
+   "questionId": "v018",
+   "correct": false,
+   "elapsedMs": 288,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458147171,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b1-2,1",
+   "round": 4,
+   "questionId": "v019"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458147469,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b1-2,1",
+   "round": 4,
+   "questionId": "v019",
+   "correct": false,
+   "elapsedMs": 297,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458147470,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b1-2,1",
+   "round": 5,
+   "questionId": "v013"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458148037,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b1-2,1",
+   "round": 5,
+   "questionId": "v013",
+   "correct": true,
+   "elapsedMs": 567,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458148037,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b1-2,1",
+   "won": false,
+   "rounds": 6,
+   "correctCount": 1,
+   "maxStreak": 1,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458160470,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b2-2,1",
+   "tileId": "2,1",
+   "seed": 193947138,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458160470,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b2-2,1",
+   "round": 0,
+   "questionId": "v011"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458163506,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b2-2,1",
+   "round": 0,
+   "questionId": "v011",
+   "correct": false,
+   "elapsedMs": 3035,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458163507,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b2-2,1",
+   "round": 1,
+   "questionId": "v020"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458166448,
+  "event": {
+   "type": "question_skipped",
+   "battleId": "b2-2,1",
+   "round": 1,
+   "questionId": "v020",
+   "elapsedMs": 2941
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458166448,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b2-2,1",
+   "round": 2,
+   "questionId": "v017"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458167173,
+  "event": {
+   "type": "question_skipped",
+   "battleId": "b2-2,1",
+   "round": 2,
+   "questionId": "v017",
+   "elapsedMs": 724
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458167173,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b2-2,1",
+   "round": 3,
+   "questionId": "v013"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458167418,
+  "event": {
+   "type": "question_skipped",
+   "battleId": "b2-2,1",
+   "round": 3,
+   "questionId": "v013",
+   "elapsedMs": 244
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458167419,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b2-2,1",
+   "round": 4,
+   "questionId": "v019"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458167627,
+  "event": {
+   "type": "question_skipped",
+   "battleId": "b2-2,1",
+   "round": 4,
+   "questionId": "v019",
+   "elapsedMs": 207
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458167628,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b2-2,1",
+   "round": 5,
+   "questionId": "v015"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458167838,
+  "event": {
+   "type": "question_skipped",
+   "battleId": "b2-2,1",
+   "round": 5,
+   "questionId": "v015",
+   "elapsedMs": 208
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458167838,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b2-2,1",
+   "won": false,
+   "rounds": 6,
+   "correctCount": 0,
+   "maxStreak": 0,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458204107,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b3-1,0",
+   "tileId": "1,0",
+   "seed": 1743308941,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458204107,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b3-1,0",
+   "round": 0,
+   "questionId": "v004"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458205865,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b3-1,0",
+   "round": 0,
+   "questionId": "v004",
+   "correct": true,
+   "elapsedMs": 1757,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458205866,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b3-1,0",
+   "round": 1,
+   "questionId": "v008"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458207362,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b3-1,0",
+   "round": 1,
+   "questionId": "v008",
+   "correct": true,
+   "elapsedMs": 1496,
+   "streak": 2
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458207363,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b3-1,0",
+   "won": true,
+   "rounds": 2,
+   "correctCount": 2,
+   "maxStreak": 2,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458207363,
+  "event": {
+   "type": "tile_captured",
+   "tileId": "1,0",
+   "totalCaptured": 1,
+   "sinceSessionStartMs": 84572
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458211912,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b4-0,1",
+   "tileId": "0,1",
+   "seed": 2621819338,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458211912,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b4-0,1",
+   "round": 0,
+   "questionId": "v002"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458214326,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b4-0,1",
+   "round": 0,
+   "questionId": "v002",
+   "correct": true,
+   "elapsedMs": 2413,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458214327,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b4-0,1",
+   "round": 1,
+   "questionId": "v009"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458215604,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b4-0,1",
+   "round": 1,
+   "questionId": "v009",
+   "correct": true,
+   "elapsedMs": 1276,
+   "streak": 2
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458215604,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b4-0,1",
+   "won": true,
+   "rounds": 2,
+   "correctCount": 2,
+   "maxStreak": 2,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458215605,
+  "event": {
+   "type": "tile_captured",
+   "tileId": "0,1",
+   "totalCaptured": 2,
+   "sinceSessionStartMs": 92814
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458289848,
+  "event": {
+   "type": "session_end",
+   "durationMs": 167057,
+   "battlesStarted": 4,
+   "battlesFinished": 4
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458293024,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b1-2,1",
+   "tileId": "2,1",
+   "seed": 210724757,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458293025,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b1-2,1",
+   "round": 0,
+   "questionId": "v016"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458343722,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b1-2,1",
+   "won": false,
+   "rounds": 0,
+   "correctCount": 0,
+   "maxStreak": 0,
+   "abandoned": true
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458348499,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b2-1,0",
+   "tileId": "1,0",
+   "seed": 1692976084,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458348499,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b2-1,0",
+   "round": 0,
+   "questionId": "v001"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458354081,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b2-1,0",
+   "round": 0,
+   "questionId": "v001",
+   "correct": false,
+   "elapsedMs": 5581,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458354082,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b2-1,0",
+   "round": 1,
+   "questionId": "v008"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458355237,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b2-1,0",
+   "round": 1,
+   "questionId": "v008",
+   "correct": true,
+   "elapsedMs": 1155,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458355237,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b2-1,0",
+   "won": true,
+   "rounds": 2,
+   "correctCount": 1,
+   "maxStreak": 1,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458355238,
+  "event": {
+   "type": "tile_captured",
+   "tileId": "1,0",
+   "totalCaptured": 1,
+   "sinceSessionStartMs": 65389
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458359419,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b3-0,1",
+   "tileId": "0,1",
+   "seed": 2638596957,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458359419,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b3-0,1",
+   "round": 0,
+   "questionId": "v007"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458361878,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b3-0,1",
+   "round": 0,
+   "questionId": "v007",
+   "correct": true,
+   "elapsedMs": 2458,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458361879,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b3-0,1",
+   "round": 1,
+   "questionId": "v004"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458363558,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b3-0,1",
+   "round": 1,
+   "questionId": "v004",
+   "correct": true,
+   "elapsedMs": 1679,
+   "streak": 2
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458363558,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b3-0,1",
+   "won": true,
+   "rounds": 2,
+   "correctCount": 2,
+   "maxStreak": 2,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458363559,
+  "event": {
+   "type": "tile_captured",
+   "tileId": "0,1",
+   "totalCaptured": 2,
+   "sinceSessionStartMs": 73710
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458366576,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b4-0,0",
+   "tileId": "0,0",
+   "seed": 2812587905,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458366577,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b4-0,0",
+   "round": 0,
+   "questionId": "v015"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458371143,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b4-0,0",
+   "round": 0,
+   "questionId": "v015",
+   "correct": false,
+   "elapsedMs": 4566,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458371144,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b4-0,0",
+   "round": 1,
+   "questionId": "v019"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458378563,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b4-0,0",
+   "round": 1,
+   "questionId": "v019",
+   "correct": false,
+   "elapsedMs": 7418,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458378564,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b4-0,0",
+   "round": 2,
+   "questionId": "v013"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458384523,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b4-0,0",
+   "round": 2,
+   "questionId": "v013",
+   "correct": true,
+   "elapsedMs": 5959,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458384524,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b4-0,0",
+   "round": 3,
+   "questionId": "v016"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458390455,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b4-0,0",
+   "round": 3,
+   "questionId": "v016",
+   "correct": false,
+   "elapsedMs": 5931,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458390456,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b4-0,0",
+   "round": 4,
+   "questionId": "v014"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458392905,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b4-0,0",
+   "round": 4,
+   "questionId": "v014",
+   "correct": true,
+   "elapsedMs": 2449,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458392905,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b4-0,0",
+   "round": 5,
+   "questionId": "v011"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458398698,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b4-0,0",
+   "round": 5,
+   "questionId": "v011",
+   "correct": false,
+   "elapsedMs": 5792,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458398698,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b4-0,0",
+   "won": false,
+   "rounds": 6,
+   "correctCount": 2,
+   "maxStreak": 1,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458406240,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b5-2,1",
+   "tileId": "2,1",
+   "seed": 143614281,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458406240,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b5-2,1",
+   "round": 0,
+   "questionId": "v017"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458408865,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b5-2,1",
+   "round": 0,
+   "questionId": "v017",
+   "correct": true,
+   "elapsedMs": 2624,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458408865,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b5-2,1",
+   "round": 1,
+   "questionId": "v020"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458411490,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b5-2,1",
+   "round": 1,
+   "questionId": "v020",
+   "correct": true,
+   "elapsedMs": 2624,
+   "streak": 2
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458411491,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b5-2,1",
+   "round": 2,
+   "questionId": "v018"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458415900,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b5-2,1",
+   "round": 2,
+   "questionId": "v018",
+   "correct": false,
+   "elapsedMs": 4409,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458415900,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b5-2,1",
+   "round": 3,
+   "questionId": "v015"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458421640,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b5-2,1",
+   "round": 3,
+   "questionId": "v015",
+   "correct": false,
+   "elapsedMs": 5739,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458421641,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b5-2,1",
+   "won": true,
+   "rounds": 4,
+   "correctCount": 2,
+   "maxStreak": 2,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458421642,
+  "event": {
+   "type": "tile_captured",
+   "tileId": "2,1",
+   "totalCaptured": 3,
+   "sinceSessionStartMs": 131793
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458447016,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b6-0,0",
+   "tileId": "0,0",
+   "seed": 2846143143,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458447016,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b6-0,0",
+   "round": 0,
+   "questionId": "v013"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458449482,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b6-0,0",
+   "round": 0,
+   "questionId": "v013",
+   "correct": false,
+   "elapsedMs": 2466,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458449483,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b6-0,0",
+   "round": 1,
+   "questionId": "v015"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458451547,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b6-0,0",
+   "round": 1,
+   "questionId": "v015",
+   "correct": false,
+   "elapsedMs": 2064,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458451548,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b6-0,0",
+   "round": 2,
+   "questionId": "v014"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458457585,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b6-0,0",
+   "round": 2,
+   "questionId": "v014",
+   "correct": false,
+   "elapsedMs": 6037,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458457586,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b6-0,0",
+   "round": 3,
+   "questionId": "v016"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458459695,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b6-0,0",
+   "round": 3,
+   "questionId": "v016",
+   "correct": false,
+   "elapsedMs": 2108,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458459695,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b6-0,0",
+   "round": 4,
+   "questionId": "v017"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458461496,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b6-0,0",
+   "round": 4,
+   "questionId": "v017",
+   "correct": true,
+   "elapsedMs": 1801,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458461496,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b6-0,0",
+   "round": 5,
+   "questionId": "v019"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458464427,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b6-0,0",
+   "round": 5,
+   "questionId": "v019",
+   "correct": false,
+   "elapsedMs": 2930,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458464428,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b6-0,0",
+   "won": false,
+   "rounds": 6,
+   "correctCount": 1,
+   "maxStreak": 1,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458470745,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b7-0,0",
+   "tileId": "0,0",
+   "seed": 2862920762,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458470746,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b7-0,0",
+   "round": 0,
+   "questionId": "v012"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458475488,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b7-0,0",
+   "round": 0,
+   "questionId": "v012",
+   "correct": true,
+   "elapsedMs": 4742,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458475488,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b7-0,0",
+   "round": 1,
+   "questionId": "v017"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458480790,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b7-0,0",
+   "round": 1,
+   "questionId": "v017",
+   "correct": true,
+   "elapsedMs": 5301,
+   "streak": 2
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458480791,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b7-0,0",
+   "round": 2,
+   "questionId": "v016"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458484832,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b7-0,0",
+   "round": 2,
+   "questionId": "v016",
+   "correct": false,
+   "elapsedMs": 4041,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458484833,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b7-0,0",
+   "round": 3,
+   "questionId": "v011"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458487510,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b7-0,0",
+   "round": 3,
+   "questionId": "v011",
+   "correct": true,
+   "elapsedMs": 2677,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458487511,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b7-0,0",
+   "round": 4,
+   "questionId": "v019"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458566708,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b7-0,0",
+   "round": 4,
+   "questionId": "v019",
+   "correct": true,
+   "elapsedMs": 79197,
+   "streak": 2
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458566709,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b7-0,0",
+   "round": 5,
+   "questionId": "v020"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458572432,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b7-0,0",
+   "round": 5,
+   "questionId": "v020",
+   "correct": false,
+   "elapsedMs": 5722,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458572433,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b7-0,0",
+   "won": false,
+   "rounds": 6,
+   "correctCount": 4,
+   "maxStreak": 2,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458625990,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b8-0,2",
+   "tileId": "0,2",
+   "seed": 3244978495,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458625991,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b8-0,2",
+   "round": 0,
+   "questionId": "v012"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458632483,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b8-0,2",
+   "round": 0,
+   "questionId": "v012",
+   "correct": true,
+   "elapsedMs": 6491,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458632483,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b8-0,2",
+   "round": 1,
+   "questionId": "v014"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458637164,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b8-0,2",
+   "round": 1,
+   "questionId": "v014",
+   "correct": true,
+   "elapsedMs": 4680,
+   "streak": 2
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458637165,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b8-0,2",
+   "round": 2,
+   "questionId": "v013"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458639150,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b8-0,2",
+   "round": 2,
+   "questionId": "v013",
+   "correct": true,
+   "elapsedMs": 1984,
+   "streak": 3
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458639151,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b8-0,2",
+   "round": 3,
+   "questionId": "v018"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458645100,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b8-0,2",
+   "round": 3,
+   "questionId": "v018",
+   "correct": false,
+   "elapsedMs": 5948,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458645100,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b8-0,2",
+   "round": 4,
+   "questionId": "v019"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458648583,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b8-0,2",
+   "round": 4,
+   "questionId": "v019",
+   "correct": true,
+   "elapsedMs": 3482,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458648584,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b8-0,2",
+   "round": 5,
+   "questionId": "v016"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458654331,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b8-0,2",
+   "round": 5,
+   "questionId": "v016",
+   "correct": false,
+   "elapsedMs": 5747,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458654332,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b8-0,2",
+   "won": false,
+   "rounds": 6,
+   "correctCount": 4,
+   "maxStreak": 3,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458664079,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b9-0,2",
+   "tileId": "0,2",
+   "seed": 3328866590,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458664079,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b9-0,2",
+   "round": 0,
+   "questionId": "v018"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458669417,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b9-0,2",
+   "round": 0,
+   "questionId": "v018",
+   "correct": false,
+   "elapsedMs": 5337,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458669418,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b9-0,2",
+   "round": 1,
+   "questionId": "v013"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458673371,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b9-0,2",
+   "round": 1,
+   "questionId": "v013",
+   "correct": true,
+   "elapsedMs": 3952,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458673372,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b9-0,2",
+   "round": 2,
+   "questionId": "v014"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458675856,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b9-0,2",
+   "round": 2,
+   "questionId": "v014",
+   "correct": true,
+   "elapsedMs": 2483,
+   "streak": 2
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458675857,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b9-0,2",
+   "round": 3,
+   "questionId": "v019"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458679155,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b9-0,2",
+   "round": 3,
+   "questionId": "v019",
+   "correct": true,
+   "elapsedMs": 3297,
+   "streak": 3
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458679156,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b9-0,2",
+   "round": 4,
+   "questionId": "v011"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458683005,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b9-0,2",
+   "round": 4,
+   "questionId": "v011",
+   "correct": true,
+   "elapsedMs": 3848,
+   "streak": 4
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458683006,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b9-0,2",
+   "round": 5,
+   "questionId": "v016"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458710437,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b9-0,2",
+   "round": 5,
+   "questionId": "v016",
+   "correct": true,
+   "elapsedMs": 27431,
+   "streak": 5
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458710437,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b9-0,2",
+   "won": true,
+   "rounds": 6,
+   "correctCount": 5,
+   "maxStreak": 5,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458710438,
+  "event": {
+   "type": "tile_captured",
+   "tileId": "0,2",
+   "totalCaptured": 4,
+   "sinceSessionStartMs": 420589
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458723614,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b10-0,0",
+   "tileId": "0,0",
+   "seed": 2644811715,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458723615,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b10-0,0",
+   "round": 0,
+   "questionId": "v018"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458732783,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b10-0,0",
+   "round": 0,
+   "questionId": "v018",
+   "correct": false,
+   "elapsedMs": 9168,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458732785,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b10-0,0",
+   "round": 1,
+   "questionId": "v016"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458737719,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b10-0,0",
+   "round": 1,
+   "questionId": "v016",
+   "correct": true,
+   "elapsedMs": 4934,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458737720,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b10-0,0",
+   "round": 2,
+   "questionId": "v015"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458743091,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b10-0,0",
+   "round": 2,
+   "questionId": "v015",
+   "correct": true,
+   "elapsedMs": 5370,
+   "streak": 2
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458743092,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b10-0,0",
+   "round": 3,
+   "questionId": "v013"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458744745,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b10-0,0",
+   "round": 3,
+   "questionId": "v013",
+   "correct": true,
+   "elapsedMs": 1653,
+   "streak": 3
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458744745,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b10-0,0",
+   "round": 4,
+   "questionId": "v020"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458748325,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b10-0,0",
+   "round": 4,
+   "questionId": "v020",
+   "correct": true,
+   "elapsedMs": 3580,
+   "streak": 4
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458748327,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b10-0,0",
+   "round": 5,
+   "questionId": "v014"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458749488,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b10-0,0",
+   "round": 5,
+   "questionId": "v014",
+   "correct": true,
+   "elapsedMs": 1161,
+   "streak": 5
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458749489,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b10-0,0",
+   "won": true,
+   "rounds": 6,
+   "correctCount": 5,
+   "maxStreak": 5,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458749489,
+  "event": {
+   "type": "tile_captured",
+   "tileId": "0,0",
+   "totalCaptured": 5,
+   "sinceSessionStartMs": 459640
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458758789,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b11-2,0",
+   "tileId": "2,0",
+   "seed": 2242757315,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458758790,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b11-2,0",
+   "round": 0,
+   "questionId": "v014"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458763680,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b11-2,0",
+   "round": 0,
+   "questionId": "v014",
+   "correct": true,
+   "elapsedMs": 4890,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458763681,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b11-2,0",
+   "round": 1,
+   "questionId": "v019"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458770156,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b11-2,0",
+   "round": 1,
+   "questionId": "v019",
+   "correct": true,
+   "elapsedMs": 6474,
+   "streak": 2
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458770157,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b11-2,0",
+   "round": 2,
+   "questionId": "v017"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458773244,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b11-2,0",
+   "round": 2,
+   "questionId": "v017",
+   "correct": false,
+   "elapsedMs": 3087,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458773245,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b11-2,0",
+   "round": 3,
+   "questionId": "v012"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458779964,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b11-2,0",
+   "round": 3,
+   "questionId": "v012",
+   "correct": true,
+   "elapsedMs": 6718,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458779964,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b11-2,0",
+   "round": 4,
+   "questionId": "v015"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458785082,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b11-2,0",
+   "round": 4,
+   "questionId": "v015",
+   "correct": false,
+   "elapsedMs": 5117,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458785083,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b11-2,0",
+   "round": 5,
+   "questionId": "v011"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458787147,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b11-2,0",
+   "round": 5,
+   "questionId": "v011",
+   "correct": true,
+   "elapsedMs": 2064,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458787148,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b11-2,0",
+   "won": false,
+   "rounds": 6,
+   "correctCount": 4,
+   "maxStreak": 2,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458793405,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b12-1,2",
+   "tileId": "1,2",
+   "seed": 3085458785,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458793406,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b12-1,2",
+   "round": 0,
+   "questionId": "v020"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458794244,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b12-1,2",
+   "round": 0,
+   "questionId": "v020",
+   "correct": false,
+   "elapsedMs": 838,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458794244,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b12-1,2",
+   "round": 1,
+   "questionId": "v016"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458795320,
+  "event": {
+   "type": "question_skipped",
+   "battleId": "b12-1,2",
+   "round": 1,
+   "questionId": "v016",
+   "elapsedMs": 1075
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458795321,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b12-1,2",
+   "round": 2,
+   "questionId": "v015"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458795705,
+  "event": {
+   "type": "question_skipped",
+   "battleId": "b12-1,2",
+   "round": 2,
+   "questionId": "v015",
+   "elapsedMs": 384
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458795706,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b12-1,2",
+   "round": 3,
+   "questionId": "v011"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458795906,
+  "event": {
+   "type": "question_skipped",
+   "battleId": "b12-1,2",
+   "round": 3,
+   "questionId": "v011",
+   "elapsedMs": 199
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458795907,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b12-1,2",
+   "round": 4,
+   "questionId": "v012"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458796116,
+  "event": {
+   "type": "question_skipped",
+   "battleId": "b12-1,2",
+   "round": 4,
+   "questionId": "v012",
+   "elapsedMs": 209
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458796117,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b12-1,2",
+   "round": 5,
+   "questionId": "v014"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458796308,
+  "event": {
+   "type": "question_skipped",
+   "battleId": "b12-1,2",
+   "round": 5,
+   "questionId": "v014",
+   "elapsedMs": 190
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458796309,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b12-1,2",
+   "won": false,
+   "rounds": 6,
+   "correctCount": 0,
+   "maxStreak": 0,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458802233,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b13-2,0",
+   "tileId": "2,0",
+   "seed": 2276312553,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458802234,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b13-2,0",
+   "round": 0,
+   "questionId": "v018"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458806389,
+  "event": {
+   "type": "question_skipped",
+   "battleId": "b13-2,0",
+   "round": 0,
+   "questionId": "v018",
+   "elapsedMs": 4155
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458806390,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b13-2,0",
+   "round": 1,
+   "questionId": "v017"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458806599,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b13-2,0",
+   "round": 1,
+   "questionId": "v017",
+   "correct": true,
+   "elapsedMs": 208,
+   "streak": 1
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458806600,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b13-2,0",
+   "round": 2,
+   "questionId": "v014"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458806809,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b13-2,0",
+   "round": 2,
+   "questionId": "v014",
+   "correct": true,
+   "elapsedMs": 208,
+   "streak": 2
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458806810,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b13-2,0",
+   "round": 3,
+   "questionId": "v019"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458807037,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b13-2,0",
+   "round": 3,
+   "questionId": "v019",
+   "correct": true,
+   "elapsedMs": 227,
+   "streak": 3
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458807038,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b13-2,0",
+   "round": 4,
+   "questionId": "v011"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458807247,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b13-2,0",
+   "round": 4,
+   "questionId": "v011",
+   "correct": false,
+   "elapsedMs": 207,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458807248,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b13-2,0",
+   "round": 5,
+   "questionId": "v015"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458807456,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b13-2,0",
+   "round": 5,
+   "questionId": "v015",
+   "correct": false,
+   "elapsedMs": 208,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458807457,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b13-2,0",
+   "won": false,
+   "rounds": 6,
+   "correctCount": 3,
+   "maxStreak": 3,
+   "abandoned": false
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458817589,
+  "event": {
+   "type": "battle_start",
+   "battleId": "b14-2,0",
+   "tileId": "2,0",
+   "seed": 2259534934,
+   "rulesVersion": "0.1.0"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458817590,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b14-2,0",
+   "round": 0,
+   "questionId": "v019"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458820249,
+  "event": {
+   "type": "question_skipped",
+   "battleId": "b14-2,0",
+   "round": 0,
+   "questionId": "v019",
+   "elapsedMs": 2659
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458820250,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b14-2,0",
+   "round": 1,
+   "questionId": "v012"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458820459,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b14-2,0",
+   "round": 1,
+   "questionId": "v012",
+   "correct": false,
+   "elapsedMs": 209,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458820460,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b14-2,0",
+   "round": 2,
+   "questionId": "v020"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458820634,
+  "event": {
+   "type": "question_answered",
+   "battleId": "b14-2,0",
+   "round": 2,
+   "questionId": "v020",
+   "correct": false,
+   "elapsedMs": 172,
+   "streak": 0
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458820635,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b14-2,0",
+   "round": 3,
+   "questionId": "v014"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458821675,
+  "event": {
+   "type": "question_skipped",
+   "battleId": "b14-2,0",
+   "round": 3,
+   "questionId": "v014",
+   "elapsedMs": 1039
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458821676,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b14-2,0",
+   "round": 4,
+   "questionId": "v011"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458821885,
+  "event": {
+   "type": "question_skipped",
+   "battleId": "b14-2,0",
+   "round": 4,
+   "questionId": "v011",
+   "elapsedMs": 209
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458821886,
+  "event": {
+   "type": "question_shown",
+   "battleId": "b14-2,0",
+   "round": 5,
+   "questionId": "v013"
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458822114,
+  "event": {
+   "type": "question_skipped",
+   "battleId": "b14-2,0",
+   "round": 5,
+   "questionId": "v013",
+   "elapsedMs": 227
+  }
+ },
+ {
+  "schemaVersion": 0,
+  "sessionId": "a186278f-be0f-4a4c-9ed7-7d0c291be668",
+  "ts": 1786458822115,
+  "event": {
+   "type": "battle_end",
+   "battleId": "b14-2,0",
+   "won": false,
+   "rounds": 6,
+   "correctCount": 0,
+   "maxStreak": 0,
+   "abandoned": false
+  }
+ }
+]

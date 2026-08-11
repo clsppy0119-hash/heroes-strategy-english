@@ -52,12 +52,21 @@ describe('設計梯度', () => {
     expect(play(2, allSkipped).outcome).toBe('lost');
   });
 
-  it('全答對拿得下 LV.3', () => {
-    expect(play(3, allCorrect).outcome).toBe('won');
+  it('全跳過也拿不下 LV.3', () => {
+    expect(play(3, allSkipped).outcome).toBe('lost');
   });
 
-  it('一半答對拿不下 LV.3——連對才是關鍵', () => {
-    expect(play(3, alternating).outcome).toBe('lost');
+  it('答對三題就拿得下 LV.3', () => {
+    // 2026-08-11 lionw 指定的門檻。原本要五題，太嚴。
+    expect(play(3, alternating).outcome).toBe('won');
+  });
+
+  it('只答對一題拿不下 LV.3——擋得住亂點', () => {
+    expect(play(3, [1, 0, null, 0, null, 0]).outcome).toBe('lost');
+  });
+
+  it('全答對拿得下 LV.3', () => {
+    expect(play(3, allCorrect).outcome).toBe('won');
   });
 });
 
@@ -84,6 +93,57 @@ describe('答錯不受罰', () => {
   });
 });
 
+/** #14 的修正：一次失誤不該等於整場報銷。 */
+describe('連對退一階而不是歸零', () => {
+  it('答錯只退一階', () => {
+    let battle = battleAt(3);
+    battle = resolveRound(battle, 1);
+    battle = resolveRound(battle, 1);
+    expect(battle.streak).toBe(2);
+    battle = resolveRound(battle, 0);
+    expect(battle.streak).toBe(1);
+  });
+
+  it('連對 0 時答錯不會變成負數', () => {
+    expect(resolveRound(battleAt(3), 0).streak).toBe(0);
+  });
+
+  it('LV.3 中途錯一題仍有機會翻盤', () => {
+    // 對、對、錯、對、對、對——第一版這樣會因為歸零而輸掉。
+    expect(play(3, [1, 1, 0, 1, 1, 1]).outcome).toBe('won');
+  });
+});
+
+describe('打不贏就早點收攤', () => {
+  it('剩餘回合全暴擊也打不穿時直接結束，不再出題', () => {
+    // LV.3 全跳過：連對永遠是 0，撐不到六回合就該判定沒救。
+    const battle = play(3, allSkipped);
+    expect(battle.outcome).toBe('lost');
+    expect(battle.lossReason).toBe('hopeless');
+    expect(battle.log.length).toBeLessThan(MAX_ROUNDS);
+  });
+
+  it('還有機會時不會提早結束', () => {
+    const battle = resolveRound(battleAt(3), 1);
+    expect(battle.outcome).toBe('ongoing');
+  });
+
+  it('撐到第六回合才差一點的標成 out-of-rounds', () => {
+    // 一直差那麼一點：全程還有理論上的翻盤空間，所以不會被提早判定沒救。
+    const battle = play(2, [0, 0, 0, 0, 1, 0]);
+    expect(battle.lossReason).toBe('out-of-rounds');
+    expect(battle.log).toHaveLength(MAX_ROUNDS);
+  });
+
+  it('撤退標成 retreated', () => {
+    expect(abandonBattle(battleAt(1)).lossReason).toBe('retreated');
+  });
+
+  it('贏了就沒有 lossReason', () => {
+    expect(play(1, allSkipped).lossReason).toBeNull();
+  });
+});
+
 describe('連對倍率', () => {
   it('沒連對是 1 倍', () => {
     expect(multiplierFor(0)).toBe(1);
@@ -99,14 +159,13 @@ describe('連對倍率', () => {
     expect(multiplierFor(100)).toBe(CRIT_MAX);
   });
 
-  it('答錯歸零', () => {
+  it('maxStreak 記得住最高點', () => {
     let battle = battleAt(3);
     battle = resolveRound(battle, 1);
     battle = resolveRound(battle, 1);
-    expect(battle.streak).toBe(2);
     battle = resolveRound(battle, 0);
-    expect(battle.streak).toBe(0);
     expect(battle.maxStreak).toBe(2);
+    expect(battle.streak).toBe(1);
   });
 });
 
@@ -119,10 +178,11 @@ describe('回合結算', () => {
     expect(lastRound.troopsAfter).toBe(previous.troopsAfter);
   });
 
-  it('打完六回合還沒贏就算戰敗撤退', () => {
+  it('LV.3 全跳過會提早判定沒救，不會硬撐滿六回合', () => {
     const battle = play(3, allSkipped);
     expect(battle.outcome).toBe('lost');
-    expect(battle.log).toHaveLength(MAX_ROUNDS);
+    expect(battle.lossReason).toBe('hopeless');
+    expect(battle.log.length).toBeLessThan(MAX_ROUNDS);
   });
 
   it('戰鬥結束後再結算不會改變狀態', () => {

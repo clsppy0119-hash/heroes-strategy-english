@@ -1,7 +1,30 @@
 import { describe, expect, it } from 'vitest';
 
-import { DISENGAGE_LIMIT, GUESS_THRESHOLD_MS, analyze } from './analyze';
+import { createMap, MAX_ROUNDS } from '@/core';
+
+import {
+  ANALYZER_ROUNDS_PER_BATTLE,
+  ANALYZER_TILE_LEVELS,
+  DISENGAGE_LIMIT,
+  GUESS_THRESHOLD_MS,
+  analyze,
+} from './analyze';
 import type { AnalyticsEvent, AnalyticsRecord } from './events';
+
+/**
+ * analyze.ts 內聯了地圖等級與回合上限，好讓 scripts/analyze-playtest.mjs
+ * 用純 Node 就跑得起來。代價是可能跟 core 漂移，這兩個測試盯著。
+ */
+describe('分析器沒有跟 core 漂移', () => {
+  it('地格等級一致', () => {
+    const fromCore = Object.fromEntries(createMap().map((tile) => [tile.id, tile.level]));
+    expect(ANALYZER_TILE_LEVELS).toEqual(fromCore);
+  });
+
+  it('回合上限一致', () => {
+    expect(ANALYZER_ROUNDS_PER_BATTLE).toBe(MAX_ROUNDS);
+  });
+});
 
 let ts = 0;
 const rec = (event: AnalyticsEvent, sessionId = 's1'): AnalyticsRecord => ({

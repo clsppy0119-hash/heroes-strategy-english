@@ -44,7 +44,10 @@
   "battle.result.won": "拿下了",
   "battle.result.lost": "撤回主城",
   "battle.result.summary": "六回合裡答對 {correct} 題，最長連對 {maxStreak}",
-  "battle.result.hint": "連對越長暴擊越重。這一場的守軍需要連對才打得穿。",
+  "battle.loss.hopeless": "連對斷了，剩下的回合追不回來。守軍太硬的話，先去打旁邊等級低的地格。",
+  "battle.loss.outOfRounds": "六回合打完，守軍還差一口氣。多答對一題就過了。",
+  "battle.loss.outOfTroops": "兵力耗盡。",
+  "battle.loss.retreated": "中途撤退。",
   "battle.dismiss": "回到地圖",
 
   "battle.log.heading": "戰報",

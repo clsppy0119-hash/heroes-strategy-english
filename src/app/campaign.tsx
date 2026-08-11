@@ -21,6 +21,7 @@ import {
   retreat,
   vocabLevelForTile,
   type GameState,
+  type LossReason,
   type Tile,
 } from "@/core";
 import { t } from "@/i18n";
@@ -456,6 +457,20 @@ function BattlePanel({
   );
 }
 
+/** 誠實地說為什麼輸，而不是讓玩家自己猜。 */
+function lossMessage(reason: LossReason | null): string {
+  switch (reason) {
+    case "hopeless":
+      return t("battle.loss.hopeless");
+    case "out-of-rounds":
+      return t("battle.loss.outOfRounds");
+    case "out-of-troops":
+      return t("battle.loss.outOfTroops");
+    default:
+      return t("battle.loss.retreated");
+  }
+}
+
 function BattleReport({
   battle,
   onDismiss,
@@ -472,7 +487,9 @@ function BattleReport({
       <p className="text-sm">
         {t("battle.result.summary", { correct: battle.correctCount, maxStreak: battle.maxStreak })}
       </p>
-      {!won && <p className="text-sm text-black/60 dark:text-white/60">{t("battle.result.hint")}</p>}
+      {!won && (
+        <p className="text-sm text-black/60 dark:text-white/60">{lossMessage(battle.lossReason)}</p>
+      )}
 
       <div className="flex flex-col gap-1">
         <h3 className="font-mono text-xs uppercase tracking-widest text-black/50 dark:text-white/50">

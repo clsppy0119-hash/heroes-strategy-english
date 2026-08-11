@@ -63,6 +63,30 @@ if (report.timeToThreeTilesMs.length === 0) {
 }
 console.log('   可玩定義是五分鐘內\n');
 
+console.log('診斷拆解');
+console.log('   地格   出題  跳題   答對率   勝率');
+for (const row of report.byTileLevel) {
+  const acc = row.accuracy === null ? '—' : pct(row.accuracy);
+  const win = row.winRate === null ? '—' : `${pct(row.winRate)} (${row.won}/${row.battles})`;
+  console.log(
+    `   LV.${row.level}${String(row.questionsShown).padStart(7)}${String(row.skipped).padStart(6)}${acc.padStart(9)}${win.padStart(14)}`,
+  );
+}
+console.log('   勝率若隨等級崩掉，問題是難度曲線而不是玩家不想學\n');
+
+console.log('   回合   沒在讀題');
+report.disengageByRound.forEach((value, index) => {
+  console.log(`   第 ${index + 1} 回合${(value === null ? '—' : pct(value)).padStart(9)}`);
+});
+console.log('   越後面越高，代表玩家已經知道這場輸了還被迫繼續答\n');
+
+console.log('   之前連敗   沒在讀題');
+report.disengageByLosingStreak.forEach((value, index) => {
+  const label = index === report.disengageByLosingStreak.length - 1 ? `${index} 場以上` : `${index} 場`;
+  console.log(`   ${label.padEnd(9)}${(value === null ? '—' : pct(value)).padStart(9)}`);
+});
+console.log('   輸掉之後才開始亂點，是挫折不是無視\n');
+
 const verdict = {
   pass: '通過——亂猜跳題率在喊停線以下，可以往 v0.2 走',
   fail: '未通過——停下來重做設計，不要加內容',
