@@ -60,6 +60,24 @@ scripts/         CI 用的兩支約束檢查
 
 相關：[#1 架構邊界與 LingoQuest 單向遷移](https://github.com/clsppy0119-hash/heroes-strategy-english/issues/1)
 
+## 給測試者一個連結
+
+v0.1 完全跑在瀏覽器裡（純前端 + localStorage），所以整個遊戲可以靜態輸出，丟到任何靜態託管都能跑，不需要 Node 伺服器。
+
+```bash
+pnpm build:static
+```
+
+產生 `out/`（約 900KB）。要放在子路徑的話：
+
+```bash
+pnpm build:static --base-path /heroes-strategy-english
+```
+
+這件事對 [#7](https://github.com/clsppy0119-hash/heroes-strategy-english/issues/7) 是必要的——沒有人會為了幫忙測一個遊戲去 clone repo 跑 pnpm。
+
+v0.2 有了後端之後就不能再靜態輸出，那時候把 `next.config.ts` 的 `STATIC_EXPORT` 分支拿掉即可。
+
 ## 測試場與數據
 
 v0.1 的驗收條件寫在 [#7](https://github.com/clsppy0119-hash/heroes-strategy-english/issues/7)，喊停條件是**亂猜跳題率超過三成就停下來重做設計，不要加內容**。
