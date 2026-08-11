@@ -130,6 +130,23 @@ export function multiplierFor(streak: number): number {
 }
 
 /**
+ * 這一回合答對／沒答對分別會打出多少傷害。
+ *
+ * 給介面在玩家「還沒選」的時候就把兩個數字擺出來。#7 的可玩定義有兩句，
+ * 第二句是「說得出答題跟打贏之間的關係」——把因果寫在事後的戰報裡太晚了，
+ * 沒看過說明的人整場都可能沒把兩件事連起來。
+ */
+export function previewDamage(battle: BattleState, correct: boolean): number {
+  const streak = correct ? battle.streak + 1 : Math.max(0, battle.streak - 1);
+  return Math.floor(battle.troops * BASE_DAMAGE_RATE * multiplierFor(streak));
+}
+
+/** 這一回合答對的話會是幾倍。 */
+export function previewMultiplier(battle: BattleState): number {
+  return multiplierFor(battle.streak + 1);
+}
+
+/**
  * 結算一回合。`choiceIndex` 傳 null 代表跳過。
  *
  * 純函式：同樣的 battle 加同樣的作答，永遠得到同樣的結果。

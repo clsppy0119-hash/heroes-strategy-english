@@ -46,6 +46,8 @@ export {
   currentQuestion,
   maxRemainingDamage,
   multiplierFor,
+  previewDamage,
+  previewMultiplier,
   resolveRound,
   startBattle,
   type BattleOutcome,

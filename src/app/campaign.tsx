@@ -18,6 +18,8 @@ import {
   defenderHpFor,
   dismissBattle,
   marchBlockedReason,
+  previewDamage,
+  previewMultiplier,
   retreat,
   vocabLevelForTile,
   type GameState,
@@ -183,12 +185,8 @@ export function Campaign() {
 
       {battle !== null && battle.outcome === "ongoing" ? (
         <BattlePanel
-          round={battle.round}
-          troops={battle.troops}
-          defenderHp={battle.defenderHp}
-          streak={battle.streak}
+          battle={battle}
           question={questions[battle.round]}
-          lastRound={battle.log[battle.log.length - 1] ?? null}
           onAnswer={submit}
           onRetreat={giveUp}
         />
@@ -379,34 +377,42 @@ function TileButton({
 }
 
 function BattlePanel({
-  round,
-  troops,
-  defenderHp,
-  streak,
+  battle,
   question,
-  lastRound,
   onAnswer,
   onRetreat,
 }: {
-  round: number;
-  troops: number;
-  defenderHp: number;
-  streak: number;
+  battle: NonNullable<GameState["battle"]>;
   question: Question;
-  lastRound: { damage: number; correct: boolean; choiceIndex: number | null; multiplier: number } | null;
   onAnswer: (choiceIndex: number | null) => void;
   onRetreat: () => void;
 }) {
+  const maxHp = defenderHpFor(battle.tileLevel);
+  const lastRound = battle.log[battle.log.length - 1] ?? null;
+  const critDamage = previewDamage(battle, true);
+  const missDamage = previewDamage(battle, false);
+
   return (
     <section className="flex flex-col gap-4 rounded border border-black/15 p-4 dark:border-white/15">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-lg font-semibold">
-          {t("battle.heading", { round: round + 1, total: MAX_ROUNDS })}
+          {t("battle.heading", { round: battle.round + 1, total: MAX_ROUNDS })}
         </h2>
         <p className="text-sm tabular-nums text-black/60 dark:text-white/60">
-          {t("battle.troops")} {troops} · {t("battle.defender")} {defenderHp} ·{" "}
-          {streak > 0 ? t("battle.streak", { streak }) : t("battle.noStreak")}
+          {t("battle.troops")} {battle.troops} ·{" "}
+          {battle.streak > 0 ? t("battle.streak", { streak: battle.streak }) : t("battle.noStreak")}
         </p>
+      </div>
+
+      {/* 條比數字更看得出「這一刀砍掉多少」，第一次玩的人才感覺得到進展。 */}
+      <div className="flex flex-col gap-1">
+        <p className="text-sm tabular-nums">{t("battle.defenderBar", { hp: battle.defenderHp, max: maxHp })}</p>
+        <div className="h-2 w-full overflow-hidden rounded bg-black/10 dark:bg-white/10">
+          <div
+            className="h-full bg-black transition-[width] duration-300 dark:bg-white"
+            style={{ width: `${Math.max(0, (battle.defenderHp / maxHp) * 100)}%` }}
+          />
+        </div>
       </div>
 
       {lastRound !== null && (
@@ -436,6 +442,22 @@ function BattlePanel({
           </button>
         ))}
       </div>
+
+      {/*
+        因果寫在選之前，不是寫在戰報裡。#7 的可玩定義要玩家「說得出答題跟打贏的關係」，
+        而沒看過說明的人只會看眼前這一步。
+      */}
+      <dl className="flex flex-col gap-1 text-sm tabular-nums sm:flex-row sm:gap-6">
+        <div className="font-medium">
+          {t("battle.preview.correct", {
+            multiplier: previewMultiplier(battle),
+            damage: critDamage,
+          })}
+        </div>
+        <div className="text-black/50 dark:text-white/50">
+          {t("battle.preview.miss", { damage: missDamage })}
+        </div>
+      </dl>
 
       <div className="flex flex-wrap gap-3">
         <button
