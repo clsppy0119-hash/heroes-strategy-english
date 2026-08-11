@@ -1,0 +1,59 @@
+name: Deploy to GitHub Pages
+
+# 只在手動觸發或推上 main 時跑。
+#
+# 前提：倉庫 Settings → Pages → Source 要先設成 "GitHub Actions"。
+# 沒設之前這個 workflow 會失敗，不會偷偷把東西發出去。
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同時只跑一個部署，但不取消進行中的——取消到一半會留下壞掉的站。
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Pages 把站放在 /<repo>/ 底下，資源路徑要帶前綴。
+      - name: Build static export
+        run: pnpm build:static --base-path "/${{ github.event.repository.name }}"
+
+      # 沒有這個檔案，Pages 會把 _next/ 當成 Jekyll 的私有目錄整個忽略掉。
+      - name: Disable Jekyll
+        run: touch out/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
