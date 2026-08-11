@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # 約束一：元件裡不得出現硬編中文
+      - name: No hardcoded CJK in components
+        run: pnpm check:i18n
+
+      # 約束三：src/core 必須能整塊搬到伺服器
+      - name: Core stays portable
+        run: pnpm check:core
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
