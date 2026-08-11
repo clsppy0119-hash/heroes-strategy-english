@@ -1,0 +1,27 @@
+{
+  "app.title": "群英戰略版",
+  "app.description": "英文學得越好，仗打得越漂亮。",
+
+  "selfcheck.heading": "系統自檢",
+  "selfcheck.subheading": "v0.1-1 骨架驗證頁。#5 的戰鬥核心進來之後這頁會被取代。",
+
+  "selfcheck.i18n.label": "文案來源",
+  "selfcheck.i18n.value": "全部來自 locales/zh-TW.json",
+
+  "selfcheck.rules.label": "規則版本",
+
+  "selfcheck.rng.label": "決定性亂數",
+  "selfcheck.rng.hint": "同一個種子必須永遠給出同一串數字。",
+  "selfcheck.rng.seedLabel": "種子",
+  "selfcheck.rng.reroll": "換一個種子",
+
+  "selfcheck.analytics.label": "埋點",
+  "selfcheck.analytics.fire": "送出一筆測試事件",
+  "selfcheck.analytics.count": "已記錄 {count} 筆事件",
+  "selfcheck.analytics.clear": "清空",
+  "selfcheck.analytics.empty": "還沒有事件",
+
+  "selfcheck.content.label": "內容供應者",
+  "selfcheck.content.budget": "AI 預算餘額 {remaining} / {limit}",
+  "selfcheck.content.fallback": "超出預算時自動降級到既有題庫"
+}
