@@ -4,6 +4,8 @@ import {
   abandonBattle,
   currentQuestion,
   multiplierFor,
+  previewDamage,
+  previewMultiplier,
   resolveRound,
   startBattle,
   type BattleState,
@@ -199,6 +201,43 @@ describe('回合結算', () => {
     expect(() =>
       startBattle({ battleId: 'b', tileId: '0,0', tileLevel: 1, seed: 1, questions: questions.slice(0, 3) }),
     ).toThrow(RangeError);
+  });
+});
+
+/** 預覽如果跟實際打出來的不一樣，比不給預覽更糟——那是在騙玩家。 */
+describe('傷害預覽跟實際結果一致', () => {
+  it('答對的預覽等於答對後的實際傷害', () => {
+    for (const lv of [1, 2, 3]) {
+      let battle = battleAt(lv);
+      for (let r = 0; r < 3 && battle.outcome === 'ongoing'; r += 1) {
+        const predicted = previewDamage(battle, true);
+        const next = resolveRound(battle, 1);
+        expect(next.log[next.log.length - 1].damage, `LV.${lv} 第 ${r + 1} 回合`).toBe(predicted);
+        battle = next;
+      }
+    }
+  });
+
+  it('沒答對的預覽等於跳過與答錯的實際傷害', () => {
+    let battle = battleAt(3);
+    battle = resolveRound(battle, 1);
+    const predicted = previewDamage(battle, false);
+    expect(resolveRound(battle, null).log.at(-1)?.damage).toBe(predicted);
+    expect(resolveRound(battle, 0).log.at(-1)?.damage).toBe(predicted);
+  });
+
+  it('答對的預覽永遠嚴格大於沒答對的', () => {
+    let battle = battleAt(3);
+    for (let r = 0; r < 3 && battle.outcome === 'ongoing'; r += 1) {
+      expect(previewDamage(battle, true)).toBeGreaterThan(previewDamage(battle, false));
+      battle = resolveRound(battle, 1);
+    }
+  });
+
+  it('預覽的倍率就是答對後會拿到的倍率', () => {
+    const battle = resolveRound(battleAt(3), 1);
+    const predicted = previewMultiplier(battle);
+    expect(resolveRound(battle, 1).log.at(-1)?.multiplier).toBe(predicted);
   });
 });
 

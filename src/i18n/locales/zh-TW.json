@@ -37,6 +37,10 @@
   "battle.multiplier": "×{multiplier}",
   "battle.retreat": "撤退",
 
+  "battle.preview.correct": "答對 → 暴擊 ×{multiplier}，約 {damage} 傷害",
+  "battle.preview.miss": "答錯或不答 → 約 {damage} 傷害",
+  "battle.defenderBar": "守軍 {hp} / {max}",
+
   "battle.round.crit": "暴擊 ×{multiplier}，造成 {damage} 傷害",
   "battle.round.normal": "普通命中，造成 {damage} 傷害",
   "battle.round.skipped": "未作答，普通命中 {damage} 傷害",
