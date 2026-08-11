@@ -44,11 +44,13 @@ export {
 export {
   abandonBattle,
   currentQuestion,
+  maxRemainingDamage,
   multiplierFor,
   resolveRound,
   startBattle,
   type BattleOutcome,
   type BattleState,
+  type LossReason,
   type RoundQuestion,
   type RoundResult,
   type StartBattleInput,

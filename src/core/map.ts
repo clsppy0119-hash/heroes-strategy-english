@@ -24,11 +24,17 @@ export function tileId(x: number, y: number): TileId {
   return `${x},${y}`;
 }
 
-/** 等級配置：正交鄰格好打，對角要連對才拿得下。 */
+/**
+ * 等級配置：1,1,1,2,2,2,3,3。
+ *
+ * 第一版是 1,1,2,2,3,3,3,3——四塊 LV.3 佔了實測 60% 的出題量，
+ * 難度梯度後重前輕，玩家幾乎都在打贏不了的仗（#14）。
+ * 現在兩塊 LV.3 當作要連對才拿得下的目標，其餘鋪成漸進的坡。
+ */
 const LEVELS: readonly (readonly number[])[] = [
-  [3, 1, 3],
+  [2, 1, 3],
   [1, 0, 2],
-  [3, 2, 3],
+  [3, 2, 1],
 ];
 
 export function createMap(): readonly Tile[] {
