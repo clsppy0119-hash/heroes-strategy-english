@@ -10,6 +10,7 @@
   "campaign.marchCost": "出兵耗糧 {cost}",
   "campaign.restart": "重新開局",
   "campaign.rules": "規則 {version}",
+  "campaign.export": "匯出測試資料",
 
   "campaign.status.cleared": "全境已下。這一局結束了。",
   "campaign.status.stuck": "糧草不足以再出兵。這一局結束了。",

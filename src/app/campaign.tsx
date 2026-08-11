@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { track } from "@/analytics";
+import { storedRecords, track } from "@/analytics";
 import { vocabProvider, type Question } from "@/content";
 import {
   GRID_SIZE,
@@ -178,7 +178,7 @@ export function Campaign() {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <Header grain={game.grain} captured={captured} />
+      <Header grain={game.grain} captured={captured} onExport={exportRecords} />
 
       {battle !== null && battle.outcome === "ongoing" ? (
         <BattlePanel
@@ -220,7 +220,32 @@ export function Campaign() {
   );
 }
 
-function Header({ grain, captured }: { grain: number; captured: number }) {
+/**
+ * 測試場結束後把埋點交出來。
+ *
+ * v0.1 的資料只存在測試者的瀏覽器裡，所以要有一個把它拿出來的方法。
+ * v0.2 事件直接進後端之後，這顆按鈕就可以拿掉。
+ * 匯出的檔案餵給 `pnpm analyze` 會算出 #7 的五個數字。
+ */
+function exportRecords(): void {
+  const blob = new Blob([JSON.stringify(storedRecords(), null, 1)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `playtest-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "")}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function Header({
+  grain,
+  captured,
+  onExport,
+}: {
+  grain: number;
+  captured: number;
+  onExport: () => void;
+}) {
   return (
     <header className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
@@ -234,6 +259,13 @@ function Header({ grain, captured }: { grain: number; captured: number }) {
           value={t("campaign.capturedValue", { captured, total: TOTAL_TILES })}
         />
         <Stat label={t("campaign.rules", { version: RULES_VERSION })} value="" />
+        <button
+          type="button"
+          onClick={onExport}
+          className="text-black/40 underline underline-offset-4 dark:text-white/40"
+        >
+          {t("campaign.export")}
+        </button>
       </dl>
     </header>
   );
