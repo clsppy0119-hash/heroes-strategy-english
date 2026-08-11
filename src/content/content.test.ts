@@ -1,7 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { MAX_ROUNDS } from '@/core';
+
 import { createBudgetTracker, withBudgetGuard, type ContentProvider } from './provider';
-import { CHOICE_COUNT, assertBankUsable, createStaticProvider, type VocabEntry } from './static-provider';
+import {
+  CHOICE_COUNT,
+  MIN_ENTRIES_PER_LEVEL,
+  assertBankUsable,
+  createStaticProvider,
+  type VocabEntry,
+} from './static-provider';
 
 const bank: VocabEntry[] = Array.from({ length: 12 }, (_, i) => ({
   id: `w${i}`,
@@ -56,8 +64,24 @@ describe('assertBankUsable', () => {
     expect(() => assertBankUsable(bank.slice(0, 3))).toThrow();
   });
 
+  it('抽不滿一場戰鬥的題數也要丟錯', () => {
+    // 五題能湊出四個選項，但一場六回合的戰鬥抽不滿——
+    // 只檢查選項數的話，這種題庫會通過驗證然後在玩家按下出兵時整頁掛掉。
+    expect(bank.slice(0, 5).length).toBeGreaterThanOrEqual(CHOICE_COUNT);
+    expect(() => assertBankUsable(bank.slice(0, 5))).toThrow();
+  });
+
+  it('下限是「選項數」與「一場戰鬥的題數」取大的', () => {
+    expect(MIN_ENTRIES_PER_LEVEL).toBe(Math.max(CHOICE_COUNT, MAX_ROUNDS));
+  });
+
   it('夠用就不吭聲', () => {
     expect(() => assertBankUsable(bank)).not.toThrow();
+  });
+
+  it('題庫夠大時，一場戰鬥抽得滿', () => {
+    const provider = createStaticProvider(bank);
+    expect(provider.getQuestions({ count: MAX_ROUNDS, seed: 1 })).toHaveLength(MAX_ROUNDS);
   });
 });
 
