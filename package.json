@@ -11,7 +11,9 @@
     "test": "vitest run",
     "check:i18n": "node scripts/check-no-hardcoded-cjk.mjs",
     "check:core": "node scripts/check-core-purity.mjs",
-    "verify": "pnpm lint && pnpm typecheck && pnpm check:i18n && pnpm check:core && pnpm test && pnpm build"
+    "verify": "pnpm lint && pnpm typecheck && pnpm check:i18n && pnpm check:core && pnpm check:vocab && pnpm test && pnpm build",
+    "gen:vocab": "node scripts/gen-vocab.mjs",
+    "check:vocab": "node scripts/check-vocab-sync.mjs"
   },
   "dependencies": {
     "next": "16.3.0",
