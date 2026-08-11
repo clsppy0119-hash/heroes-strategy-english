@@ -1,4 +1,4 @@
-import { nextInt, shuffle, type RngState } from '@/core';
+import { MAX_ROUNDS, nextInt, shuffle, type RngState } from '@/core';
 
 import type { ContentProvider, Question, QuestionRequest } from './provider';
 
@@ -58,21 +58,33 @@ export function createStaticProvider(bank: readonly VocabEntry[]): ContentProvid
   };
 }
 
-/** 題庫不足以湊滿四個選項時，讓呼叫端早點知道，而不是出一題只有兩個選項。 */
+/**
+ * 每個 level 至少要有這麼多題。
+ *
+ * 兩個下限取大的：
+ *   CHOICE_COUNT  湊不滿四個選項，會出一題只有兩個選項
+ *   MAX_ROUNDS    抽不滿一場戰鬥的題數，startBattle 會丟 RangeError——
+ *                 而那是在玩家按下「出兵」的當下丟，等於整頁掛掉
+ *
+ * 原本只檢查前者。題庫縮到每級五題就會通過驗證但一開打就崩，
+ * 這種洞要在載入題庫時就擋掉，不是等玩家踩。
+ */
+const MIN_ENTRIES_PER_LEVEL = Math.max(CHOICE_COUNT, MAX_ROUNDS);
+
 export function assertBankUsable(bank: readonly VocabEntry[]): void {
   const byLevel = new Map<number, number>();
   for (const entry of bank) {
     byLevel.set(entry.level, (byLevel.get(entry.level) ?? 0) + 1);
   }
   for (const [level, count] of byLevel) {
-    if (count < CHOICE_COUNT) {
-      throw new Error(`level ${level} only has ${count} entries, need at least ${CHOICE_COUNT}`);
+    if (count < MIN_ENTRIES_PER_LEVEL) {
+      throw new Error(`level ${level} only has ${count} entries, need at least ${MIN_ENTRIES_PER_LEVEL}`);
     }
   }
 }
 
 /** 匯出給測試與 #6 用。 */
-export { CHOICE_COUNT };
+export { CHOICE_COUNT, MIN_ENTRIES_PER_LEVEL };
 
 /** 決定性地抽一個。#5 的戰鬥回合要抽單題時用。 */
 export function pickOne<T>(items: readonly T[], state: RngState): readonly [item: T, next: RngState] {

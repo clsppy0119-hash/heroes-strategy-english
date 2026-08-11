@@ -13,6 +13,7 @@ import process from 'node:process';
 const SOURCE = 'content/vocab.v1.csv';
 const TARGET = 'src/content/vocab.generated.ts';
 const COLUMNS = ['id', 'en', 'zh', 'level', 'source'];
+const MIN_ENTRIES_PER_LEVEL = 6;
 
 /** 這份 CSV 不含引號與逗號欄位，所以不需要完整的 CSV parser——但要驗證這件事成立。 */
 function parseCsv(text) {
@@ -67,9 +68,12 @@ function validate(entries) {
     byLevel.set(entry.level, (byLevel.get(entry.level) ?? 0) + 1);
   }
   for (const [level, count] of [...byLevel].sort((a, b) => a[0] - b[0])) {
-    // 四選一需要同 level 至少四個詞才湊得出干擾項。
-    if (count < 4) {
-      problems.push(`level ${level} 只有 ${count} 個詞，四選一至少需要 4 個`);
+    // 一場戰鬥要抽滿 MAX_ROUNDS 題，抽不滿的話玩家一按「出兵」就會炸。
+    // 這個下限比「四選一需要四個干擾項」更嚴，所以只檢查它就夠。
+    // 權威定義在 src/content/static-provider.ts 的 MIN_ENTRIES_PER_LEVEL，
+    // 那邊是從 core 的 MAX_ROUNDS 算出來的；這裡是給 CSV 用的早期攔截。
+    if (count < MIN_ENTRIES_PER_LEVEL) {
+      problems.push(`level ${level} 只有 ${count} 個詞，一場戰鬥要抽 ${MIN_ENTRIES_PER_LEVEL} 題`);
     }
   }
 
