@@ -27,6 +27,8 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # typecheck 會先跑 next typegen：LayoutProps 這類全域型別是 Next 產生的，
+      # 乾淨 checkout 上還不存在，直接 tsc 會找不到。
       - name: Typecheck
         run: pnpm typecheck
 
