@@ -8,11 +8,15 @@ describe('t', () => {
   });
 
   it('代入參數', () => {
-    expect(t('selfcheck.analytics.count', { count: 3 })).toBe('已記錄 3 筆事件');
+    expect(t('battle.log.round', { round: 3 })).toBe('第 3 回合');
+  });
+
+  it('代入多個參數', () => {
+    expect(t('campaign.capturedValue', { captured: 2, total: 8 })).toBe('2 / 8');
   });
 
   it('缺參數時保留佔位符，不會變成 undefined', () => {
-    expect(t('selfcheck.analytics.count', {})).toBe('已記錄 {count} 筆事件');
+    expect(t('battle.log.round', {})).toBe('第 {round} 回合');
   });
 
   it('缺 key 時回傳 key 本身', () => {
