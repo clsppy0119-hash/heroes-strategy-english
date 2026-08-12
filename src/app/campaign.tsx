@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { storedRecords, track } from "@/analytics";
 import { vocabProvider, type Question } from "@/content";
 import {
+  GRAIN_PER_TILE_PER_HOUR,
   GRID_SIZE,
   MARCH_COST,
   RULES_VERSION,
@@ -14,14 +15,18 @@ import {
   battleSeed,
   beginMarch,
   capturedCount,
+  CLOCK_NOT_STARTED,
   createGame,
   defenderHpFor,
   dismissBattle,
   marchBlockedReason,
   previewDamage,
   previewMultiplier,
+  ownedCount,
   retreat,
   roundsFor,
+  settleTime,
+  startClock,
   vocabLevelForTile,
   type GameState,
   type LossReason,
@@ -35,6 +40,9 @@ const TOTAL_TILES = GRID_SIZE * GRID_SIZE - 1;
 /** v0.1 沒有存檔，重開就是新的一局；種子固定讓測試場次可以互相比較。 */
 const SEED_TEXT = "v0.1";
 
+/** 補算頻率。純粹是畫面更新的節奏，補算本身是冪等的。 */
+const SETTLE_INTERVAL_MS = 5_000;
+
 /** 地形的顯示名稱走 i18n；core 裡只有識別碼。 */
 function terrainName(terrain: Terrain): string {
   return t(`terrain.${terrain}` as MessageKey);
@@ -46,7 +54,7 @@ function terrainMark(terrain: Terrain): string {
 }
 
 export function Campaign() {
-  const [game, setGame] = useState<GameState>(() => createGame(SEED_TEXT));
+  const [game, setGame] = useState<GameState>(() => createGame(SEED_TEXT, CLOCK_NOT_STARTED));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<readonly Question[]>([]);
 
@@ -54,8 +62,14 @@ export function Campaign() {
   const shownAt = useRef<number>(0);
   // render 期間不能取時間（不純），所以掛載後才記 session 起點。
   const sessionStart = useRef<number>(0);
+
+  // 掛載後對時，然後定期補算——玩家看著糧草長，那是「時間在動」的唯一證據。
   useEffect(() => {
     sessionStart.current = Date.now();
+    const tick = () => setGame((current) => settleTime(startClock(current, Date.now()), Date.now()));
+    tick();
+    const timer = setInterval(tick, SETTLE_INTERVAL_MS);
+    return () => clearInterval(timer);
   }, []);
 
   const battle = game.battle;
@@ -184,7 +198,7 @@ export function Campaign() {
       battlesFinished: game.battlesStarted - (game.battle?.outcome === "ongoing" ? 1 : 0),
     });
     sessionStart.current = Date.now();
-    setGame(createGame(SEED_TEXT));
+    setGame(createGame(SEED_TEXT, Date.now()));
     setSelectedId(null);
     setQuestions([]);
   }, [game]);
@@ -193,7 +207,12 @@ export function Campaign() {
 
   return (
     <div className="flex w-full flex-col gap-8">
-      <Header grain={game.grain} captured={capturedCount(game)} onExport={exportRecords} />
+      <Header
+        grain={game.grain}
+        grainRate={GRAIN_PER_TILE_PER_HOUR * ownedCount(game)}
+        captured={capturedCount(game)}
+        onExport={exportRecords}
+      />
 
       {battle !== null && battle.outcome === "ongoing" ? (
         <BattlePanel
@@ -250,10 +269,12 @@ function exportRecords(): void {
 
 function Header({
   grain,
+  grainRate,
   captured,
   onExport,
 }: {
   grain: number;
+  grainRate: number;
   captured: number;
   onExport: () => void;
 }) {
@@ -266,7 +287,12 @@ function Header({
 
       <div className="flex flex-wrap items-end justify-between gap-4 border-y border-rule py-3">
         <dl className="flex gap-8">
-          <Stat label={t("campaign.grain")} value={String(grain)} tone="bronze" />
+          <Stat
+            label={t("campaign.grain")}
+            value={String(grain)}
+            note={t("campaign.grainRate", { rate: grainRate })}
+            tone="bronze"
+          />
           <Stat
             label={t("campaign.captured")}
             value={t("campaign.capturedValue", { captured, total: TOTAL_TILES })}
@@ -284,7 +310,17 @@ function Header({
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone: "bronze" | "vermilion" }) {
+function Stat({
+  label,
+  value,
+  note,
+  tone,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+  tone: "bronze" | "vermilion";
+}) {
   return (
     <div className="flex flex-col gap-0.5">
       <dt className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-soft">{label}</dt>
@@ -295,6 +331,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone: "bro
       >
         {value}
       </dd>
+      {note !== undefined && <dd className="font-mono text-[11px] tabular-nums text-ink-soft">{note}</dd>}
     </div>
   );
 }
