@@ -33,6 +33,16 @@
   "tile.blocked.notAdjacent": "要先拿下相鄰的地才打得到這裡",
   "tile.blocked.notEnoughGrain": "糧草不足",
   "tile.blocked.inBattle": "戰鬥進行中",
+  "tile.blocked.marching": "已經有一支軍隊在外了",
+
+  "march.label": "行軍",
+  "march.seconds": "{seconds} 秒",
+  "march.heading": "行軍中",
+  "march.arrivedHeading": "兵臨城下",
+  "march.remaining": "還要 {seconds} 秒",
+  "march.arrived": "軍隊已就位，等你下令",
+  "march.engage": "接敵",
+  "march.recall": "鳴金",
 
   "battle.heading": "第 {round} / {total} 回合",
   "battle.troops": "我軍",

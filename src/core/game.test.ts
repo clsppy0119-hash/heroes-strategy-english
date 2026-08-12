@@ -6,12 +6,15 @@ const T0 = 1_700_000_000_000;
 import { GRAIN_PER_BATTLE, MARCH_COST, MAX_ROUNDS, START_GRAIN } from './config';
 import {
   answerRound,
-  beginMarch,
   capturedCount,
   createGame,
   dismissBattle,
+  engageBattle,
   marchBlockedReason,
+  marchHasArrived,
+  orderMarch,
   ownedCount,
+  recallMarch,
   retreat,
   type GameState,
 } from './game';
@@ -37,9 +40,15 @@ const FAR = tileId(CITY_X + 3, CITY_Y);
 /** 角落，一開始碰不到。 */
 const CORNER = tileId(0, 0);
 
+/** 出兵到接敵。行軍時間對大部分測試不是重點，直接跳到抵達那一刻。 */
+function engage(state: GameState, id: string): GameState {
+  const ordered = orderMarch(state, id, T0);
+  return engageBattle(ordered, questions, ordered.march!.arrivesAt);
+}
+
 /** 一路答對直到戰鬥結束。 */
 function winBattle(state: GameState, id: string): GameState {
-  let next = beginMarch(state, id, questions);
+  let next = engage(state, id);
   while (next.battle !== null && next.battle.outcome === 'ongoing') {
     next = answerRound(next, 1);
   }
@@ -48,7 +57,7 @@ function winBattle(state: GameState, id: string): GameState {
 
 /** 一路跳過直到戰鬥結束。 */
 function skipBattle(state: GameState, id: string): GameState {
-  let next = beginMarch(state, id, questions);
+  let next = engage(state, id);
   while (next.battle !== null && next.battle.outcome === 'ongoing') {
     next = answerRound(next, null);
   }
@@ -108,18 +117,90 @@ describe('出兵限制', () => {
   });
 
   it('戰鬥中不能再出兵', () => {
-    const state = beginMarch(createGame('s', T0), NEAR, questions);
+    const state = engage(createGame('s', T0), NEAR);
     expect(marchBlockedReason(state, tileId(CITY_X, CITY_Y - 1))).toBe('in-battle');
   });
 
-  it('被擋下時 beginMarch 丟錯', () => {
-    expect(() => beginMarch(createGame('s', T0), CORNER, questions)).toThrow();
+  it('被擋下時 orderMarch 丟錯', () => {
+    expect(() => orderMarch(createGame('s', T0), CORNER, T0)).toThrow();
+  });
+});
+
+/**
+ * 出兵不再是點下去就開打：下令、走路、抵達、接敵是四件事。
+ * 這一組盯著中間那兩件不會被跳過。
+ */
+describe('行軍', () => {
+  it('下令就上路，還沒有戰鬥', () => {
+    const state = orderMarch(createGame('s', T0), NEAR, T0);
+    expect(state.march?.tileId).toBe(NEAR);
+    expect(state.battle).toBeNull();
+  });
+
+  it('糧草在出發時就扣，不是抵達時', () => {
+    const state = orderMarch(createGame('s', T0), NEAR, T0);
+    expect(state.grain).toBe(START_GRAIN - MARCH_COST);
+  });
+
+  it('剛出發還沒到', () => {
+    const state = orderMarch(createGame('s', T0), NEAR, T0);
+    expect(marchHasArrived(state, T0)).toBe(false);
+    expect(marchHasArrived(state, state.march!.arrivesAt)).toBe(true);
+  });
+
+  it('還沒到就接敵會丟錯——不能靠呼叫順序偷跳過行軍時間', () => {
+    const state = orderMarch(createGame('s', T0), NEAR, T0);
+    expect(() => engageBattle(state, questions, T0)).toThrow();
+  });
+
+  it('沒有軍隊在外時接敵會丟錯', () => {
+    expect(() => engageBattle(createGame('s', T0), questions, T0)).toThrow();
+  });
+
+  it('一次只有一支軍隊在外', () => {
+    const state = orderMarch(createGame('s', T0), NEAR, T0);
+    expect(marchBlockedReason(state, tileId(CITY_X, CITY_Y - 1))).toBe('marching');
+  });
+
+  it('抵達之後也還算在外，直到接敵', () => {
+    const state = orderMarch(createGame('s', T0), NEAR, T0);
+    expect(marchBlockedReason(state, tileId(CITY_X, CITY_Y - 1))).toBe('marching');
+    expect(marchHasArrived(state, state.march!.arrivesAt)).toBe(true);
+    expect(marchBlockedReason(state, tileId(CITY_X, CITY_Y - 1))).toBe('marching');
+  });
+
+  it('接敵之後軍隊不在路上了', () => {
+    const state = engage(createGame('s', T0), NEAR);
+    expect(state.march).toBeNull();
+    expect(state.battle?.tileId).toBe(NEAR);
+    expect(state.battlesStarted).toBe(1);
+  });
+
+  it('鳴金原數退糧——點錯一塊地不該賠掉一次出兵', () => {
+    const state = recallMarch(orderMarch(createGame('s', T0), NEAR, T0));
+    expect(state.march).toBeNull();
+    expect(state.grain).toBe(START_GRAIN);
+    expect(state.battlesStarted).toBe(0);
+  });
+
+  it('沒在行軍時鳴金不會有事', () => {
+    const state = createGame('s', T0);
+    expect(recallMarch(state)).toBe(state);
+  });
+
+  /** 離開再回來的那條路徑：抵達的軍隊要一直等在那裡，不會自己開打也不會消失。 */
+  it('離線很久回來，軍隊還在原地等接敵', () => {
+    const state = orderMarch(createGame('s', T0), NEAR, T0);
+    const muchLater = T0 + 86_400_000;
+    expect(marchHasArrived(state, muchLater)).toBe(true);
+    expect(state.battle).toBeNull();
+    expect(engageBattle(state, questions, muchLater).battle?.tileId).toBe(NEAR);
   });
 });
 
 describe('糧草', () => {
   it('出兵先扣糧', () => {
-    const state = beginMarch(createGame('s', T0), NEAR, questions);
+    const state = engage(createGame('s', T0), NEAR);
     expect(state.grain).toBe(START_GRAIN - MARCH_COST);
   });
 
@@ -171,7 +252,7 @@ describe('失敗狀態', () => {
 
 describe('retreat', () => {
   it('算成敗仗且糧草不退', () => {
-    const state = retreat(beginMarch(createGame('s', T0), NEAR, questions));
+    const state = retreat(engage(createGame('s', T0), NEAR));
     expect(state.battle?.outcome).toBe('lost');
     expect(state.grain).toBeLessThan(START_GRAIN);
     expect(capturedCount(state)).toBe(0);
@@ -224,7 +305,7 @@ describe('一局的進展', () => {
 
 describe('dismissBattle', () => {
   it('戰鬥還在進行時不關', () => {
-    const state = beginMarch(createGame('s', T0), NEAR, questions);
+    const state = engage(createGame('s', T0), NEAR);
     expect(dismissBattle(state)).toBe(state);
   });
 

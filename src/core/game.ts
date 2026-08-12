@@ -8,6 +8,7 @@ import {
   type RoundQuestion,
 } from './battle';
 import { canMarchTo, createMap, findTile, type Tile, type TileId } from './map';
+import { hasArrived, startMarch, type March } from './march';
 import { RULES_VERSION, type RulesVersion } from './rules';
 import { seedFrom, type RngState } from './rng';
 
@@ -31,6 +32,8 @@ export interface GameState {
   readonly seed: RngState;
   readonly tiles: readonly Tile[];
   readonly grain: number;
+  /** 在路上的那支軍隊。抵達之後還是留在這裡，等玩家按「接敵」才轉成戰鬥。 */
+  readonly march: March | null;
   readonly battle: BattleState | null;
   readonly battlesStarted: number;
   readonly battlesWon: number;
@@ -47,6 +50,7 @@ export function createGame(seedText: string, now: number): GameState {
     seed: seedFrom(seedText),
     tiles: createMap(),
     grain: START_GRAIN,
+    march: null,
     battle: null,
     battlesStarted: 0,
     battlesWon: 0,
@@ -100,12 +104,16 @@ export function ownedCount(state: GameState): number {
   return state.tiles.filter((tile) => tile.owned).length;
 }
 
-export type MarchBlockedReason = 'in-battle' | 'not-adjacent' | 'not-enough-grain';
+export type MarchBlockedReason = 'in-battle' | 'marching' | 'not-adjacent' | 'not-enough-grain';
 
 /** 擋下出兵的理由，null 代表可以出兵。UI 用它決定按鈕狀態與提示。 */
 export function marchBlockedReason(state: GameState, id: TileId): MarchBlockedReason | null {
   if (state.battle !== null && state.battle.outcome === 'ongoing') {
     return 'in-battle';
+  }
+  // 一次只有一支軍隊在外。抵達之後也還算在外，直到玩家接敵或鳴金。
+  if (state.march !== null) {
+    return 'marching';
   }
   const tile = findTile(state.tiles, id);
   if (tile === undefined || !canMarchTo(state.tiles, tile)) {
@@ -126,7 +134,13 @@ export function battleId(state: GameState, id: TileId): string {
   return `b${state.battlesStarted + 1}-${id}`;
 }
 
-export function beginMarch(state: GameState, id: TileId, questions: readonly RoundQuestion[]): GameState {
+/**
+ * 下令出兵。扣糧，然後軍隊上路——這一刻還沒有戰鬥。
+ *
+ * 糧草在出發時就扣掉，不是抵達時。理由是玩家看得到的因果要跟按鈕同時發生；
+ * 抵達才扣的話，糧草會在玩家沒有操作的時候自己少掉。
+ */
+export function orderMarch(state: GameState, id: TileId, now: number): GameState {
   const blocked = marchBlockedReason(state, id);
   if (blocked !== null) {
     throw new Error(`cannot march to ${id}: ${blocked}`);
@@ -139,12 +153,54 @@ export function beginMarch(state: GameState, id: TileId, questions: readonly Rou
   return {
     ...state,
     grain: state.grain - MARCH_COST,
+    march: startMarch(id, tile.x, tile.y, now),
+  };
+}
+
+/**
+ * 鳴金。還沒接敵，糧草原數帶回。
+ *
+ * 全額退是刻意的：點錯一塊地就損失一次出兵的成本，只會讓玩家不敢點。
+ * 真正的成本是已經花掉的那段時間，那退不回來。
+ */
+export function recallMarch(state: GameState): GameState {
+  if (state.march === null) {
+    return state;
+  }
+  return { ...state, grain: state.grain + MARCH_COST, march: null };
+}
+
+export function marchHasArrived(state: GameState, now: number): boolean {
+  return state.march !== null && hasArrived(state.march, now);
+}
+
+/**
+ * 接敵。把已抵達的行軍換成一場戰鬥。
+ *
+ * 題目由呼叫端抽好傳進來——題庫在 core 外面（core 不得相依外層模組），
+ * 而抽題要用 battleSeed(state, id)，所以順序是：先算種子、抽題、再呼叫這裡。
+ */
+export function engageBattle(state: GameState, questions: readonly RoundQuestion[], now: number): GameState {
+  if (state.march === null) {
+    throw new Error('no march to engage');
+  }
+  if (!hasArrived(state.march, now)) {
+    throw new Error(`march to ${state.march.tileId} has not arrived`);
+  }
+  const tile = findTile(state.tiles, state.march.tileId);
+  if (tile === undefined) {
+    throw new Error(`no tile ${state.march.tileId}`);
+  }
+
+  return {
+    ...state,
+    march: null,
     battlesStarted: state.battlesStarted + 1,
     battle: startBattle({
-      battleId: battleId(state, id),
-      tileId: id,
+      battleId: battleId(state, tile.id),
+      tileId: tile.id,
       tileLevel: tile.level,
-      seed: battleSeed(state, id),
+      seed: battleSeed(state, tile.id),
       questions,
     }),
   };
