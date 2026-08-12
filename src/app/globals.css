@@ -1,26 +1,136 @@
 @import "tailwindcss";
 
+/*
+ * 兵棋沙盤的配色：墨、宣紙、朱砂、銅、苔。
+ *
+ * 之前整頁是 Tailwind 預設的黑白灰，九個灰方塊看起來像單字 app 而不是戰場（#21）。
+ * 顏色本身不改任何規則，但它決定玩家第一眼認為自己在玩什麼。
+ *
+ * 朱砂只給「己方的行動」用——出兵鍵、我軍、暴擊。用得越省，出現時越重。
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --paper: #efe7d6;
+  --paper-raised: #e6dcc7;
+  --paper-sunk: #dcd0b6;
+  --ink: #1b1712;
+  --ink-soft: #6b5f4c;
+  --rule: rgba(27, 23, 18, 0.18);
+  --rule-strong: rgba(27, 23, 18, 0.42);
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --vermilion: #a8331f;
+  --azure: #2c5b6e;
+  --bronze: #8a6a24;
+  --moss: #55663f;
+
+  --terrain-city: #a8331f;
+  --terrain-pass: #6b4a2a;
+  --terrain-forest: #55663f;
+  --terrain-field: #8a6a24;
+  --terrain-mine: #2c5b6e;
+  --terrain-waste: #7a705c;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --paper: #14120e;
+    --paper-raised: #1d1a14;
+    --paper-sunk: #26221a;
+    --ink: #ece2cd;
+    --ink-soft: #9a8d74;
+    --rule: rgba(236, 226, 205, 0.16);
+    --rule-strong: rgba(236, 226, 205, 0.38);
+
+    --vermilion: #e07a5f;
+    --azure: #7fb0c4;
+    --bronze: #c9a24a;
+    --moss: #9aae74;
+
+    --terrain-city: #e07a5f;
+    --terrain-pass: #b5895c;
+    --terrain-forest: #9aae74;
+    --terrain-field: #c9a24a;
+    --terrain-mine: #7fb0c4;
+    --terrain-waste: #a2977f;
   }
 }
 
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-paper-sunk: var(--paper-sunk);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-vermilion: var(--vermilion);
+  --color-azure: var(--azure);
+  --color-bronze: var(--bronze);
+  --color-moss: var(--moss);
+  --font-mono: var(--font-geist-mono);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  /* CJK 一律走系統字型：不引入外部字型，也不會有無聲的 fallback。 */
+  font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei UI", "Microsoft JhengHei",
+    var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* 標題用襯線。中文襯線讀起來像碑刻，比無襯線更接近這個題材。 */
+.font-display {
+  font-family: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "PMingLiU", "MingLiU",
+    Georgia, serif;
+  letter-spacing: 0.02em;
+}
+
+/* 沙盤的網格底紋。 */
+.sandtable {
+  background-image:
+    linear-gradient(var(--rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+
+/* 傷害數字跳出來，而不是靜靜寫在一行小字裡。 */
+@keyframes strike {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(0) scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-strike {
+  animation: strike 380ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+@keyframes bannerRaise {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-banner {
+  animation: bannerRaise 320ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-strike,
+  .animate-banner {
+    animation: none;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+  }
 }

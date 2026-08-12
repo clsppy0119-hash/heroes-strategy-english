@@ -37,6 +37,7 @@ export {
   isAdjacent,
   marchableTiles,
   tileId,
+  type Terrain,
   type Tile,
   type TileId,
 } from './map';
