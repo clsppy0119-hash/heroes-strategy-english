@@ -1,4 +1,4 @@
-import { BASE_DAMAGE_RATE, START_TROOPS, requiredCorrect, roundsFor } from './config';
+import { BASE_DAMAGE_RATE, START_TROOPS, roundsFor } from './config';
 import { counterFor, defenderHpFor, multiplierFor } from './derive';
 import type { TileId } from './map';
 import { RULES_VERSION, type RulesVersion } from './rules';
