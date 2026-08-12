@@ -20,7 +20,10 @@ export {
   CRIT_MAX,
   CRIT_STEP,
   GRAIN_PER_OWNED_TILE,
+  GRAIN_PER_TILE_PER_HOUR,
+  HOUR_MS,
   MARCH_COST,
+  MAX_OFFLINE_MS,
   MAX_LEVEL,
   MAX_ROUNDS,
   START_GRAIN,
@@ -31,6 +34,8 @@ export {
 } from './config';
 
 export { counterFor, defenderHpFor } from './derive';
+
+export { accrueGrain, msPerGrain, type Accrual } from './time';
 
 export {
   GRID_SIZE,
@@ -74,6 +79,9 @@ export {
   marchBlockedReason,
   ownedCount,
   retreat,
+  settleTime,
+  startClock,
+  CLOCK_NOT_STARTED,
   type GameState,
   type GameStatus,
   type MarchBlockedReason,

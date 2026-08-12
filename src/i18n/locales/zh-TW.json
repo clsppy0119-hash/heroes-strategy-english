@@ -5,6 +5,7 @@
   "campaign.heading": "河朔前線",
   "campaign.subheading": "判讀正確就打得中要害。判讀不出來也照樣進攻，只是打不痛。",
   "campaign.grain": "糧草",
+  "campaign.grainRate": "+{rate} / 小時",
   "campaign.captured": "領地",
   "campaign.capturedValue": "{captured} / {total}",
   "campaign.marchCost": "出兵耗糧 {cost}",

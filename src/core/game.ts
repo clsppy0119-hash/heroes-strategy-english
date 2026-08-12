@@ -1,4 +1,5 @@
 import { GRAIN_PER_OWNED_TILE, MARCH_COST, START_GRAIN } from './config';
+import { accrueGrain } from './time';
 import {
   abandonBattle,
   resolveRound as resolveBattleRound,
@@ -28,9 +29,13 @@ export interface GameState {
   readonly battlesStarted: number;
   readonly battlesWon: number;
   readonly status: GameStatus;
+  /** 上一次補算時間產出的時間戳。core 不能自己取時間，一律由呼叫端注入。 */
+  readonly settledAt: number;
+  /** 因為超過離線上限被丟掉的時間，UI 用來提醒玩家。 */
+  readonly forfeitedMs: number;
 }
 
-export function createGame(seedText: string): GameState {
+export function createGame(seedText: string, now: number): GameState {
   return {
     rulesVersion: RULES_VERSION,
     seed: seedFrom(seedText),
@@ -40,6 +45,44 @@ export function createGame(seedText: string): GameState {
     battlesStarted: 0,
     battlesWon: 0,
     status: 'playing',
+    settledAt: now,
+    forfeitedMs: 0,
+  };
+}
+
+/**
+ * 對時。
+ *
+ * 元件在 render 期間不能取時間（不純），而靜態輸出的伺服器端也不可能知道
+ * 玩家的時鐘。所以初始狀態的 settledAt 是 0，掛載後才由這個函式對上。
+ * 對時不補算——那段「還沒掛載」的時間本來就不該產糧。
+ */
+export function startClock(state: GameState, now: number): GameState {
+  return state.settledAt === CLOCK_NOT_STARTED ? { ...state, settledAt: now } : state;
+}
+
+/** createGame 的 now 傳這個代表「還不知道現在幾點」。 */
+export const CLOCK_NOT_STARTED = 0;
+
+/**
+ * 補算時間產出。
+ *
+ * 每個會改變局面的動作都要先呼叫它，否則新佔領的地會回頭替過去的時間產糧。
+ * 重複呼叫是安全的：不足一顆糧的零頭留在帳上，不會被無條件捨去。
+ */
+export function settleTime(state: GameState, now: number): GameState {
+  const accrual = accrueGrain(ownedCount(state), state.settledAt, now);
+  if (accrual.grain === 0 && accrual.settledAt === state.settledAt && accrual.forfeitedMs === 0) {
+    return state;
+  }
+  const grain = state.grain + accrual.grain;
+  return {
+    ...state,
+    grain,
+    settledAt: accrual.settledAt,
+    forfeitedMs: state.forfeitedMs + accrual.forfeitedMs,
+    // 補算完可能就有糧再出兵了，卡住的狀態要跟著解除。
+    status: state.status === 'stuck' && grain >= MARCH_COST ? 'playing' : state.status,
   };
 }
 

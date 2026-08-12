@@ -66,6 +66,20 @@ export const COUNTER_BY_LEVEL: Readonly<Record<number, number>> = {
   3: 110,
 };
 
+export const HOUR_MS = 3_600_000;
+
+/**
+ * 每塊已佔領地格每小時產糧。
+ *
+ * 刻意慢：一塊地一小時 100，五塊地一小時 500——單次遊玩裡幾乎沒感覺，
+ * 但離線八小時回來是四千，夠打二十場。那正是 v0.2 要驗的假設
+ * （隔天有東西在等你）。單次遊玩的流動靠戰鬥產出撐，見 time.ts 的說明。
+ */
+export const GRAIN_PER_TILE_PER_HOUR = 100;
+
+/** 離線再久也只補算到這裡。沒有上限的話，放置一個月回來就是跳過遊戲。 */
+export const MAX_OFFLINE_MS = 8 * HOUR_MS;
+
 export const START_GRAIN = 600;
 
 /** 出兵消耗。輸三場就會卡住，這是 v0.1 唯一的失敗狀態。 */
