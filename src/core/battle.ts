@@ -1,5 +1,6 @@
-import { BASE_DAMAGE_RATE, CRIT_BASE, CRIT_MAX, CRIT_STEP, MAX_ROUNDS, START_TROOPS } from './config';
-import { counterFor, defenderHpFor, type TileId } from './map';
+import { BASE_DAMAGE_RATE, START_TROOPS, requiredCorrect, roundsFor } from './config';
+import { counterFor, defenderHpFor, multiplierFor } from './derive';
+import type { TileId } from './map';
 import { RULES_VERSION, type RulesVersion } from './rules';
 import type { RngState } from './rng';
 
@@ -63,6 +64,8 @@ export interface BattleState {
   readonly correctCount: number;
   readonly outcome: BattleOutcome;
   readonly lossReason: LossReason | null;
+  /** 這一場總共幾回合＝地格等級。 */
+  readonly rounds: number;
   readonly questions: readonly RoundQuestion[];
   readonly log: readonly RoundResult[];
 }
@@ -77,8 +80,9 @@ export interface StartBattleInput {
 }
 
 export function startBattle(input: StartBattleInput): BattleState {
-  if (input.questions.length < MAX_ROUNDS) {
-    throw new RangeError(`need ${MAX_ROUNDS} questions, got ${input.questions.length}`);
+  const rounds = roundsFor(input.tileLevel);
+  if (input.questions.length < rounds) {
+    throw new RangeError(`LV.${input.tileLevel} needs ${rounds} questions, got ${input.questions.length}`);
   }
   return {
     battleId: input.battleId,
@@ -94,7 +98,8 @@ export function startBattle(input: StartBattleInput): BattleState {
     correctCount: 0,
     outcome: 'ongoing',
     lossReason: null,
-    questions: input.questions.slice(0, MAX_ROUNDS),
+    rounds,
+    questions: input.questions.slice(0, rounds),
     log: [],
   };
 }
@@ -105,11 +110,13 @@ export function startBattle(input: StartBattleInput): BattleState {
  * 用來判斷這場仗是不是已經沒救了。與其讓玩家再答四題死題，不如直接收攤——
  * 死時間正是跳題發生的地方（#14）。
  */
+export { multiplierFor };
+
 export function maxRemainingDamage(battle: BattleState): number {
   let troops = battle.troops;
   let streak = battle.streak;
   let total = 0;
-  for (let round = battle.round; round < MAX_ROUNDS && troops > 0; round += 1) {
+  for (let round = battle.round; round < battle.rounds && troops > 0; round += 1) {
     streak += 1;
     total += Math.floor(troops * BASE_DAMAGE_RATE * multiplierFor(streak));
     troops -= counterFor(battle.tileLevel);
@@ -120,13 +127,6 @@ export function maxRemainingDamage(battle: BattleState): number {
 /** 這一回合要出的題。戰鬥結束後回傳 undefined。 */
 export function currentQuestion(battle: BattleState): RoundQuestion | undefined {
   return battle.outcome === 'ongoing' ? battle.questions[battle.round] : undefined;
-}
-
-export function multiplierFor(streak: number): number {
-  if (streak <= 0) {
-    return 1;
-  }
-  return Math.min(CRIT_BASE + (streak - 1) * CRIT_STEP, CRIT_MAX);
 }
 
 /**
@@ -208,14 +208,37 @@ export function resolveRound(battle: BattleState, choiceIndex: number | null): B
   if (troops <= 0) {
     return { ...next, outcome: 'lost', lossReason: 'out-of-troops' };
   }
-  if (round >= MAX_ROUNDS) {
+  if (round >= battle.rounds) {
     return { ...next, outcome: 'lost', lossReason: 'out-of-rounds' };
   }
   // 剩下的回合就算全部暴擊也打不穿，就別再出題了。
   if (maxRemainingDamage(next) < next.defenderHp) {
     return { ...next, outcome: 'lost', lossReason: 'hopeless' };
   }
+  // 反過來：剩下的回合就算完全不作答也已經打穿，一樣別再出題。
+  // 遊戲自己知道結果不會變的題目，問了只是逼玩家亂點——實測的亂點就發生在那裡（#24）。
+  if (minRemainingDamage(next) >= next.defenderHp) {
+    return { ...next, outcome: 'won' };
+  }
   return next;
+}
+
+/**
+ * 剩下的回合就算完全不作答，最少也會打出多少傷害。
+ *
+ * 跟 maxRemainingDamage 是一對：一個判「已經沒救」，一個判「已經贏定」。
+ * 兩邊都成立時就不該再出題。
+ */
+export function minRemainingDamage(battle: BattleState): number {
+  let troops = battle.troops;
+  let streak = battle.streak;
+  let total = 0;
+  for (let round = battle.round; round < battle.rounds && troops > 0; round += 1) {
+    streak = Math.max(0, streak - 1);
+    total += Math.floor(troops * BASE_DAMAGE_RATE * multiplierFor(streak));
+    troops -= counterFor(battle.tileLevel);
+  }
+  return total;
 }
 
 /** 玩家中途離開。#7 要靠這個算單場放棄率。 */

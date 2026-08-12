@@ -1,20 +1,25 @@
 /**
- * v0.1 的數值。
+ * v0.1 的規則與數值。
  *
- * 這組數字要同時滿足兩件事，缺一個設計就失敗：
+ * ## 通關規則（2026-08-12 lionw 指定）
  *
- *   1. **跳過打得動** —— 完全不作答仍能拿下 LV.1 地格。
- *      作答如果是打贏的必要條件，它就變回強制門票，
- *      違反 docs/MASTER_PLAN.md 的「不作答也能完成核心循環」。
+ * 地格等級 N 出 N 題，需答對「六成、四捨五入」才拿得下：
  *
- *   2. **跳過打得很差** —— 完全不作答絕對拿不下 LV.2 以上。
- *      作答如果只是可有可無的小加成，理性玩法就是無視它，
- *      英文退化成介面裝飾。
+ *   LV.1  出 1 題，需對 0
+ *   LV.2  出 2 題，需對 1
+ *   LV.3  出 3 題，需對 2
  *
- * core/battle.test.ts 有三個測試直接驗這條梯度。改動任何一個數字都會動到它們，
- * 這是刻意的——這些不是「參數」，是設計本身。
+ * LV.1 是特例，維持「不作答也能完成核心循環」（docs/MASTER_PLAN.md）。
+ * 它是入門坡：出一題讓玩家看到答對＝暴擊，但答不出來照樣拿得下。
  *
- * 實際倍率要在 #7 用真人資料校準。
+ * ## 數值不是手調的
+ *
+ * 守軍血量由上面的規則**推導**出來（見 map.ts 的 defenderHpFor），
+ * 不是我挑一組數字然後祈禱它符合。改動傷害公式時門檻會自動維持正確，
+ * 推導不出合法血量時會在載入時就炸掉。
+ *
+ * 這比第一版好：第一版是我手算血量去湊門檻，每次改都要重算一遍，
+ * 而且沒有東西保證我算對。
  */
 
 /** 每場戰鬥的起始兵力。v0.1 每場都補滿，糧草才是限制資源。 */
@@ -32,8 +37,34 @@ export const CRIT_STEP = 0.4;
 /** 倍率上限，避免連對太長之後一擊清場。 */
 export const CRIT_MAX = 4.0;
 
-/** 超過就算戰敗撤退。六回合是刻意的短——一場仗不該讓人答到膩。 */
-export const MAX_ROUNDS = 6;
+/** 出題數＝地格等級。「以此類推」：LV.4 就是四題。 */
+export function roundsFor(level: number): number {
+  if (!Number.isInteger(level) || level < 1) {
+    throw new RangeError(`level must be a positive integer, got ${level}`);
+  }
+  return level;
+}
+
+/**
+ * 需要答對幾題才拿得下。
+ *
+ * 六成四捨五入，但 LV.1 特例為 0——那條「跳過也能贏」的入門坡要留著，
+ * 否則答題就從「表達」變回「門票」。
+ */
+export function requiredCorrect(level: number): number {
+  return level <= 1 ? 0 : Math.round(0.6 * roundsFor(level));
+}
+
+/** 任何等級的出題數上限，給埋點與 UI 配置陣列用。 */
+export const MAX_LEVEL = 3;
+export const MAX_ROUNDS = roundsFor(MAX_LEVEL);
+
+/** 守軍每回合的反擊。血量是推導的，反擊是手調的——它只影響節奏不影響門檻。 */
+export const COUNTER_BY_LEVEL: Readonly<Record<number, number>> = {
+  1: 40,
+  2: 70,
+  3: 110,
+};
 
 export const START_GRAIN = 600;
 
@@ -42,30 +73,6 @@ export const MARCH_COST = 200;
 
 /** 每場戰鬥結束後，每塊已佔領的地格產出。不分勝敗——產糧不是打贏的獎勵。 */
 export const GRAIN_PER_OWNED_TILE = 50;
-
-/**
- * 守軍兵力與每回合反擊，依地格等級。
- *
- * 六回合裡答對幾題就拿得下：
- *
- *   LV.1  0 題（跳過也打得動）
- *   LV.2  2 題
- *   LV.3  3 題
- *
- * LV.3 原本要 5 題，2026-08-11 lionw 指定改成「對三題就讓他拿下」。
- * 800 是符合這條要求的值：三題對 95%、兩題對 20%、一題以下 0%——
- * 也就是仍然擋得住亂點，但只要真的認得三個字就過得去。
- *
- * 順帶記錄一個上限：往上調的話 1650 以上連六題全對都打不穿，
- * 因為六回合的總傷害有天花板。那不是變難，是變成不可能。
- *
- * 全部數值的驗收在 battle.test.ts 的「設計梯度」那組測試。
- */
-export const TILE_STATS: Readonly<Record<number, { readonly defenderHp: number; readonly counter: number }>> = {
-  1: { defenderHp: 300, counter: 40 },
-  2: { defenderHp: 700, counter: 70 },
-  3: { defenderHp: 800, counter: 110 },
-};
 
 /** 地格等級對到題目難度。v0.1 的題庫只有兩級。 */
 export function vocabLevelForTile(tileLevel: number): number {
