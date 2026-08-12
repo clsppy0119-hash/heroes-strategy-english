@@ -7,7 +7,6 @@ import { vocabProvider, type Question } from "@/content";
 import {
   GRID_SIZE,
   MARCH_COST,
-  MAX_ROUNDS,
   RULES_VERSION,
   START_TROOPS,
   answerRound,
@@ -22,6 +21,7 @@ import {
   previewDamage,
   previewMultiplier,
   retreat,
+  roundsFor,
   vocabLevelForTile,
   type GameState,
   type LossReason,
@@ -64,7 +64,7 @@ export function Campaign() {
   const startMarch = useCallback(
     (tile: Tile) => {
       const drawn = vocabProvider.getQuestions({
-        count: MAX_ROUNDS,
+        count: roundsFor(tile.level),
         level: vocabLevelForTile(tile.level),
         seed: battleSeed(game, tile.id),
       });
@@ -486,7 +486,7 @@ function BattlePanel({
     <section className="flex flex-col gap-6">
       <div className="flex items-baseline justify-between gap-3">
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-soft">
-          {t("battle.heading", { round: battle.round + 1, total: MAX_ROUNDS })}
+          {t("battle.heading", { round: battle.round + 1, total: battle.rounds })}
         </p>
         <p className="font-mono text-[11px] tracking-[0.15em] text-ink-soft">
           {battle.streak > 0 ? t("battle.streak", { streak: battle.streak }) : t("battle.noStreak")}

@@ -20,7 +20,8 @@ const TILE_LEVELS: Readonly<Record<string, number>> = {
   '2,2': 1,
 };
 
-const ROUNDS_PER_BATTLE = 6;
+/** 最長的一場（LV.3）有三回合。 */
+const ROUNDS_PER_BATTLE = 3;
 
 /**
  * 從埋點記錄算出 #7 要的五個數字，並對照 v0.1 事先寫下的喊停條件。

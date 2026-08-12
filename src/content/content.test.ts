@@ -64,15 +64,15 @@ describe('assertBankUsable', () => {
     expect(() => assertBankUsable(bank.slice(0, 3))).toThrow();
   });
 
-  it('抽不滿一場戰鬥的題數也要丟錯', () => {
-    // 五題能湊出四個選項，但一場六回合的戰鬥抽不滿——
-    // 只檢查選項數的話，這種題庫會通過驗證然後在玩家按下出兵時整頁掛掉。
-    expect(bank.slice(0, 5).length).toBeGreaterThanOrEqual(CHOICE_COUNT);
-    expect(() => assertBankUsable(bank.slice(0, 5))).toThrow();
+  it('下限是「選項數」與「最長一場戰鬥的題數」取大的', () => {
+    // 哪一個綁定會隨規則改變：回合數縮到三之後是選項數在綁，
+    // 但「以此類推」讓等級長高的話就換成回合數。所以斷言規則而不是數字。
+    expect(MIN_ENTRIES_PER_LEVEL).toBe(Math.max(CHOICE_COUNT, MAX_ROUNDS));
   });
 
-  it('下限是「選項數」與「一場戰鬥的題數」取大的', () => {
-    expect(MIN_ENTRIES_PER_LEVEL).toBe(Math.max(CHOICE_COUNT, MAX_ROUNDS));
+  it('剛好差一個就丟錯', () => {
+    expect(() => assertBankUsable(bank.slice(0, MIN_ENTRIES_PER_LEVEL - 1))).toThrow();
+    expect(() => assertBankUsable(bank.slice(0, MIN_ENTRIES_PER_LEVEL))).not.toThrow();
   });
 
   it('夠用就不吭聲', () => {

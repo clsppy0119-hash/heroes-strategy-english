@@ -1,5 +1,3 @@
-import { TILE_STATS } from './config';
-
 /**
  * v0.1 的地圖：3×3，中心是主城。
  *
@@ -82,20 +80,4 @@ export function canMarchTo(tiles: readonly Tile[], target: Tile): boolean {
 
 export function marchableTiles(tiles: readonly Tile[]): readonly Tile[] {
   return tiles.filter((tile) => canMarchTo(tiles, tile));
-}
-
-export function defenderHpFor(level: number): number {
-  const stats = TILE_STATS[level];
-  if (stats === undefined) {
-    throw new RangeError(`no stats for tile level ${level}`);
-  }
-  return stats.defenderHp;
-}
-
-export function counterFor(level: number): number {
-  const stats = TILE_STATS[level];
-  if (stats === undefined) {
-    throw new RangeError(`no stats for tile level ${level}`);
-  }
-  return stats.counter;
 }

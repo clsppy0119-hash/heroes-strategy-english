@@ -15,24 +15,27 @@ export { seedFrom, nextFloat, nextInt, shuffle, type RngState } from './rng';
 
 export {
   BASE_DAMAGE_RATE,
+  COUNTER_BY_LEVEL,
   CRIT_BASE,
   CRIT_MAX,
   CRIT_STEP,
   GRAIN_PER_OWNED_TILE,
   MARCH_COST,
+  MAX_LEVEL,
   MAX_ROUNDS,
   START_GRAIN,
   START_TROOPS,
-  TILE_STATS,
+  requiredCorrect,
+  roundsFor,
   vocabLevelForTile,
 } from './config';
+
+export { counterFor, defenderHpFor } from './derive';
 
 export {
   GRID_SIZE,
   canMarchTo,
-  counterFor,
   createMap,
-  defenderHpFor,
   findTile,
   isAdjacent,
   marchableTiles,
@@ -46,6 +49,7 @@ export {
   abandonBattle,
   currentQuestion,
   maxRemainingDamage,
+  minRemainingDamage,
   multiplierFor,
   previewDamage,
   previewMultiplier,
