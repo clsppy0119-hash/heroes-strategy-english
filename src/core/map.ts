@@ -11,12 +11,21 @@ export const GRID_SIZE = 3;
 
 export type TileId = string;
 
+/**
+ * 地形。純粹是身分，不影響任何規則——但沒有它，地圖就只是九個寫著等級的方塊，
+ * 玩家看到的是測驗軟體而不是戰場（#21）。
+ *
+ * 用英文識別碼而不是直接寫中文：core 不得出現介面文案，顯示名稱走 i18n key。
+ */
+export type Terrain = 'city' | 'pass' | 'forest' | 'field' | 'mine' | 'waste';
+
 export interface Tile {
   readonly id: TileId;
   readonly x: number;
   readonly y: number;
   /** 0 是主城，不能出兵攻打。 */
   readonly level: number;
+  readonly terrain: Terrain;
   readonly owned: boolean;
 }
 
@@ -37,12 +46,19 @@ const LEVELS: readonly (readonly number[])[] = [
   [3, 2, 1],
 ];
 
+/** 跟 LEVELS 對齊擺放，方便一眼看出哪一塊是什麼。關隘一律是 LV.3。 */
+const TERRAIN: readonly (readonly Terrain[])[] = [
+  ['mine', 'field', 'pass'],
+  ['forest', 'city', 'waste'],
+  ['pass', 'mine', 'field'],
+];
+
 export function createMap(): readonly Tile[] {
   const tiles: Tile[] = [];
   for (let y = 0; y < GRID_SIZE; y += 1) {
     for (let x = 0; x < GRID_SIZE; x += 1) {
       const level = LEVELS[y][x];
-      tiles.push({ id: tileId(x, y), x, y, level, owned: level === 0 });
+      tiles.push({ id: tileId(x, y), x, y, level, terrain: TERRAIN[y][x], owned: level === 0 });
     }
   }
   return tiles;
