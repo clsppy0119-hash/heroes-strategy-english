@@ -12,12 +12,37 @@ import type { RulesVersion } from '@/core';
  */
 export const SCHEMA_VERSION = 0;
 
+/**
+ * 下令出兵。v0.2 起 battle_start 不再等於「玩家決定打這一塊」——
+ * 中間隔了一段行軍時間，玩家可能就此離開。
+ *
+ * 兩個事件之間的落差就是 v0.2 最需要知道的數字：等待有沒有把人趕走。
+ * 沒有這個事件的話，放棄的行軍在資料裡完全看不見。
+ */
+export interface MarchOrdered {
+  readonly type: 'march_ordered';
+  readonly tileId: string;
+  readonly tileLevel: number;
+  readonly durationMs: number;
+}
+
+/** 鳴金收兵，軍隊還沒接敵就撤回。 */
+export interface MarchRecalled {
+  readonly type: 'march_recalled';
+  readonly tileId: string;
+  /** 已經走了多久才撤回。接近 0 是點錯，接近行軍時間是等不下去。 */
+  readonly elapsedMs: number;
+  readonly arrived: boolean;
+}
+
 export interface BattleStart {
   readonly type: 'battle_start';
   readonly battleId: string;
   readonly tileId: string;
   readonly seed: number;
   readonly rulesVersion: RulesVersion;
+  /** 從下令到接敵等了多久。行軍時間是下限，超出的部分是玩家自己晾著的。 */
+  readonly waitedMs: number;
 }
 
 export interface QuestionShown {
@@ -80,6 +105,8 @@ export interface SelfCheckPing {
 }
 
 export type AnalyticsEvent =
+  | MarchOrdered
+  | MarchRecalled
   | BattleStart
   | QuestionShown
   | QuestionAnswered

@@ -13,17 +13,23 @@ import {
   answerRound,
   battleId as makeBattleId,
   battleSeed,
-  beginMarch,
   capturedCount,
   CLOCK_NOT_STARTED,
   createGame,
   defenderHpFor,
   dismissBattle,
+  engageBattle,
   marchBlockedReason,
+  marchDurationMs,
+  marchHasArrived,
+  marchProgress,
   msPerGrain,
+  orderMarch,
   previewDamage,
   previewMultiplier,
   ownedCount,
+  recallMarch,
+  remainingMs,
   retreat,
   roundsFor,
   settleTime,
@@ -31,6 +37,7 @@ import {
   vocabLevelForTile,
   type GameState,
   type LossReason,
+  type March,
   type Terrain,
   type Tile,
 } from "@/core";
@@ -41,8 +48,17 @@ const TOTAL_TILES = GRID_SIZE * GRID_SIZE - 1;
 /** v0.1 沒有存檔，重開就是新的一局；種子固定讓測試場次可以互相比較。 */
 const SEED_TEXT = "v0.1";
 
-/** 補算頻率。純粹是畫面更新的節奏，補算本身是冪等的。 */
-const SETTLE_INTERVAL_MS = 5_000;
+/**
+ * 心跳。補算是冪等的，所以這個頻率純粹是畫面更新的節奏。
+ *
+ * 一秒是行軍倒數要的最粗粒度——五秒一跳的倒數會在原地停三次再一次掉五秒，
+ * 看起來像壞掉。
+ */
+const TICK_MS = 1_000;
+
+function seconds(ms: number): number {
+  return Math.ceil(ms / 1000);
+}
 
 /** 地形的顯示名稱走 i18n；core 裡只有識別碼。 */
 function terrainName(terrain: Terrain): string {
@@ -58,6 +74,8 @@ export function Campaign() {
   const [game, setGame] = useState<GameState>(() => createGame(SEED_TEXT, CLOCK_NOT_STARTED));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<readonly Question[]>([]);
+  // 心跳存下來的「現在」。render 期間不能取時間（不純），倒數要靠這個。
+  const [now, setNow] = useState<number>(CLOCK_NOT_STARTED);
 
   // 作答時間要從「題目出現」算起，不是從 render 算起。
   const shownAt = useRef<number>(0);
@@ -67,48 +85,92 @@ export function Campaign() {
   // 掛載後對時，然後定期補算——玩家看著糧草長，那是「時間在動」的唯一證據。
   useEffect(() => {
     sessionStart.current = Date.now();
-    const tick = () => setGame((current) => settleTime(startClock(current, Date.now()), Date.now()));
+    const tick = () => {
+      const at = Date.now();
+      setNow(at);
+      setGame((current) => settleTime(startClock(current, at), at));
+    };
     tick();
-    const timer = setInterval(tick, SETTLE_INTERVAL_MS);
+    const timer = setInterval(tick, TICK_MS);
     return () => clearInterval(timer);
   }, []);
 
   const battle = game.battle;
   const selected = game.tiles.find((tile) => tile.id === selectedId) ?? null;
 
-  const startMarch = useCallback(
+  /** 下令出兵。這一刻只是上路，戰鬥要等抵達之後玩家再按接敵。 */
+  const order = useCallback(
     (tile: Tile) => {
-      const drawn = vocabProvider.getQuestions({
-        count: roundsFor(tile.level),
-        level: vocabLevelForTile(tile.level),
-        seed: battleSeed(game, tile.id),
-      });
-
-      const next = beginMarch(
-        game,
-        tile.id,
-        drawn.map((question) => ({
-          id: question.id,
-          answerIndex: question.answerIndex,
-          choiceCount: question.choices.length,
-        })),
-      );
-
       track({
-        type: "battle_start",
-        battleId: makeBattleId(game, tile.id),
+        type: "march_ordered",
         tileId: tile.id,
-        seed: battleSeed(game, tile.id),
-        rulesVersion: RULES_VERSION,
+        tileLevel: tile.level,
+        durationMs: marchDurationMs(tile.x, tile.y),
       });
-      track({ type: "question_shown", battleId: next.battle!.battleId, round: 0, questionId: drawn[0].id });
-
-      shownAt.current = Date.now();
-      setQuestions(drawn);
-      setGame(next);
+      setGame(orderMarch(game, tile.id, Date.now()));
     },
     [game],
   );
+
+  const recall = useCallback(() => {
+    if (game.march === null) {
+      return;
+    }
+    const at = Date.now();
+    track({
+      type: "march_recalled",
+      tileId: game.march.tileId,
+      elapsedMs: at - game.march.departedAt,
+      arrived: marchHasArrived(game, at),
+    });
+    setGame(recallMarch(game));
+  }, [game]);
+
+  /**
+   * 接敵。抽題要用 battleSeed(state, id)，所以順序是先算種子、抽題、再進 core。
+   * 抵達之後不自動開打——停在「等你接敵」才是離開再回來的理由。
+   */
+  const engage = useCallback(() => {
+    const march = game.march;
+    if (march === null) {
+      return;
+    }
+    const tile = game.tiles.find((each) => each.id === march.tileId);
+    if (tile === undefined) {
+      return;
+    }
+    const at = Date.now();
+
+    const drawn = vocabProvider.getQuestions({
+      count: roundsFor(tile.level),
+      level: vocabLevelForTile(tile.level),
+      seed: battleSeed(game, tile.id),
+    });
+
+    const next = engageBattle(
+      game,
+      drawn.map((question) => ({
+        id: question.id,
+        answerIndex: question.answerIndex,
+        choiceCount: question.choices.length,
+      })),
+      at,
+    );
+
+    track({
+      type: "battle_start",
+      battleId: makeBattleId(game, tile.id),
+      tileId: tile.id,
+      seed: battleSeed(game, tile.id),
+      rulesVersion: RULES_VERSION,
+      waitedMs: at - march.departedAt,
+    });
+    track({ type: "question_shown", battleId: next.battle!.battleId, round: 0, questionId: drawn[0].id });
+
+    shownAt.current = at;
+    setQuestions(drawn);
+    setGame(next);
+  }, [game]);
 
   const submit = useCallback(
     (choiceIndex: number | null) => {
@@ -198,8 +260,10 @@ export function Campaign() {
       battlesStarted: game.battlesStarted,
       battlesFinished: game.battlesStarted - (game.battle?.outcome === "ongoing" ? 1 : 0),
     });
-    sessionStart.current = Date.now();
-    setGame(createGame(SEED_TEXT, Date.now()));
+    const at = Date.now();
+    sessionStart.current = at;
+    setNow(at);
+    setGame(createGame(SEED_TEXT, at));
     setSelectedId(null);
     setQuestions([]);
   }, [game]);
@@ -233,8 +297,11 @@ export function Campaign() {
         <Sandtable
           game={game}
           selected={selected}
+          now={now}
           onSelect={(tile) => setSelectedId(tile.id)}
-          onMarch={startMarch}
+          onMarch={order}
+          onEngage={engage}
+          onRecall={recall}
         />
       )}
 
@@ -367,15 +434,22 @@ function Stat({
 function Sandtable({
   game,
   selected,
+  now,
   onSelect,
   onMarch,
+  onEngage,
+  onRecall,
 }: {
   game: GameState;
   selected: Tile | null;
+  now: number;
   onSelect: (tile: Tile) => void;
   onMarch: (tile: Tile) => void;
+  onEngage: () => void;
+  onRecall: () => void;
 }) {
-  const blocked = selected === null ? "not-adjacent" : marchBlockedReason(game, selected.id);
+  const march = game.march;
+  const marchTile = march === null ? null : (game.tiles.find((tile) => tile.id === march.tileId) ?? null);
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
@@ -390,6 +464,7 @@ function Sandtable({
               tile={tile}
               marchable={marchBlockedReason(game, tile.id) === null}
               selected={selected?.id === tile.id}
+              targeted={march?.tileId === tile.id}
               onSelect={onSelect}
             />
           ))}
@@ -397,57 +472,152 @@ function Sandtable({
       </div>
 
       <aside className="flex flex-1 flex-col gap-4 border border-rule bg-paper-raised p-5">
-        {selected === null || selected.level === 0 ? (
-          <p className="text-sm text-ink-soft">{t("tile.select")}</p>
+        {march !== null ? (
+          <MarchPanel march={march} tile={marchTile} now={now} onEngage={onEngage} onRecall={onRecall} />
         ) : (
-          <>
-            <div className="flex items-baseline gap-3">
-              <h2 className="font-display text-2xl font-bold">{terrainName(selected.terrain)}</h2>
-              <span className="font-mono text-sm text-ink-soft">
-                {t("tile.level", { level: selected.level })}
-              </span>
-            </div>
-
-            <dl className="flex gap-8 border-y border-rule py-3 text-sm">
-              <div className="flex flex-col gap-0.5">
-                <dt className="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-soft">
-                  {t("battle.defender")}
-                </dt>
-                <dd className="font-mono text-lg tabular-nums text-azure">
-                  {selected.owned ? "—" : defenderHpFor(selected.level)}
-                </dd>
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <dt className="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-soft">
-                  {t("campaign.grain")}
-                </dt>
-                <dd className="font-mono text-lg tabular-nums text-bronze">−{MARCH_COST}</dd>
-              </div>
-            </dl>
-
-            {blocked === null ? (
-              <button
-                type="button"
-                onClick={() => onMarch(selected)}
-                className="self-start bg-vermilion px-6 py-2.5 font-display text-base font-bold text-paper"
-              >
-                {t("tile.march")}
-              </button>
-            ) : (
-              <p className="text-sm text-ink-soft">
-                {selected.owned
-                  ? t("tile.owned")
-                  : blocked === "not-enough-grain"
-                    ? t("tile.blocked.notEnoughGrain")
-                    : blocked === "in-battle"
-                      ? t("tile.blocked.inBattle")
-                      : t("tile.blocked.notAdjacent")}
-              </p>
-            )}
-          </>
+          <TileDetail game={game} tile={selected} onMarch={onMarch} />
         )}
       </aside>
     </div>
+  );
+}
+
+/**
+ * 軍隊在路上。
+ *
+ * 抵達之後停在這裡等玩家按接敵，不自動開打——那一刻才是「離開再回來，
+ * 有東西在等你」最小的一個版本，而 v0.2 要驗的就是這件事。
+ */
+function MarchPanel({
+  march,
+  tile,
+  now,
+  onEngage,
+  onRecall,
+}: {
+  march: March;
+  tile: Tile | null;
+  now: number;
+  onEngage: () => void;
+  onRecall: () => void;
+}) {
+  const arrived = now >= march.arrivesAt;
+  const progress = marchProgress(march, now);
+
+  return (
+    <>
+      <div className="flex flex-col gap-0.5">
+        <h2 className="font-display text-2xl font-bold whitespace-nowrap">
+          {arrived ? t("march.arrivedHeading") : t("march.heading")}
+        </h2>
+        {tile !== null && (
+          <span className="font-mono text-xs text-ink-soft">
+            {terrainName(tile.terrain)} · {t("tile.level", { level: tile.level })}
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <div className="h-1.5 w-full bg-paper-sunk">
+          <div
+            className="h-full bg-bronze transition-[width] duration-1000 ease-linear"
+            style={{ width: `${progress * 100}%` }}
+          />
+        </div>
+        <p className="font-mono text-xs tabular-nums text-ink-soft">
+          {arrived
+            ? t("march.arrived")
+            : t("march.remaining", { seconds: seconds(remainingMs(march, now)) })}
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4">
+        {arrived && (
+          <button
+            type="button"
+            onClick={onEngage}
+            className="bg-vermilion px-6 py-2.5 font-display text-base font-bold text-paper"
+          >
+            {t("march.engage")}
+          </button>
+        )}
+        <button type="button" onClick={onRecall} className="text-sm text-ink-soft underline underline-offset-4">
+          {t("march.recall")}
+        </button>
+      </div>
+    </>
+  );
+}
+
+function TileDetail({
+  game,
+  tile,
+  onMarch,
+}: {
+  game: GameState;
+  tile: Tile | null;
+  onMarch: (tile: Tile) => void;
+}) {
+  if (tile === null || tile.level === 0) {
+    return <p className="text-sm text-ink-soft">{t("tile.select")}</p>;
+  }
+  const blocked = marchBlockedReason(game, tile.id);
+
+  return (
+    <>
+      <div className="flex items-baseline gap-3">
+        <h2 className="font-display text-2xl font-bold">{terrainName(tile.terrain)}</h2>
+        <span className="font-mono text-sm text-ink-soft">{t("tile.level", { level: tile.level })}</span>
+      </div>
+
+      {/* 代價寫在按之前：守軍多硬、花多少糧、要走多久。 */}
+      <dl className="flex gap-8 border-y border-rule py-3 text-sm">
+        <div className="flex flex-col gap-0.5">
+          <dt className="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-soft">
+            {t("battle.defender")}
+          </dt>
+          <dd className="font-mono text-lg tabular-nums text-azure">
+            {tile.owned ? "—" : defenderHpFor(tile.level)}
+          </dd>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <dt className="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-soft">
+            {t("campaign.grain")}
+          </dt>
+          <dd className="font-mono text-lg tabular-nums text-bronze">−{MARCH_COST}</dd>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <dt className="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-soft">
+            {t("march.label")}
+          </dt>
+          <dd className="font-mono text-lg tabular-nums text-ink-soft">
+            {t("march.seconds", { seconds: seconds(marchDurationMs(tile.x, tile.y)) })}
+          </dd>
+        </div>
+      </dl>
+
+      {blocked === null ? (
+        <button
+          type="button"
+          onClick={() => onMarch(tile)}
+          className="self-start bg-vermilion px-6 py-2.5 font-display text-base font-bold text-paper"
+        >
+          {t("tile.march")}
+        </button>
+      ) : (
+        <p className="text-sm text-ink-soft">
+          {tile.owned
+            ? t("tile.owned")
+            : blocked === "not-enough-grain"
+              ? t("tile.blocked.notEnoughGrain")
+              : blocked === "in-battle"
+                ? t("tile.blocked.inBattle")
+                : blocked === "marching"
+                  ? t("tile.blocked.marching")
+                  : t("tile.blocked.notAdjacent")}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -455,11 +625,14 @@ function TileButton({
   tile,
   marchable,
   selected,
+  targeted,
   onSelect,
 }: {
   tile: Tile;
   marchable: boolean;
   selected: boolean;
+  /** 軍隊正在往這裡去。 */
+  targeted: boolean;
   onSelect: (tile: Tile) => void;
 }) {
   const owned = tile.owned;
@@ -471,7 +644,7 @@ function TileButton({
       aria-pressed={selected}
       aria-label={`${terrainName(tile.terrain)} ${t("tile.level", { level: tile.level })}${
         owned ? ` ${t("tile.owned")}` : ""
-      }`}
+      }${targeted ? ` ${t("march.heading")}` : ""}`}
       style={{ color: owned ? undefined : `var(--terrain-${tile.terrain})` }}
       className={`relative flex aspect-square flex-col items-center justify-center gap-0.5 border transition-colors ${
         owned
@@ -479,7 +652,9 @@ function TileButton({
           : marchable
             ? "border-rule-strong bg-paper hover:bg-paper-raised"
             : "border-rule bg-paper-sunk opacity-45"
-      } ${selected ? "outline outline-2 outline-offset-2 outline-vermilion" : ""}`}
+      } ${targeted ? "animate-target border-bronze bg-paper opacity-100" : ""} ${
+        selected ? "outline outline-2 outline-offset-2 outline-vermilion" : ""
+      }`}
     >
       <span className={`font-display text-xl font-bold leading-none ${owned ? "animate-banner" : ""}`}>
         {terrainMark(tile.terrain)}

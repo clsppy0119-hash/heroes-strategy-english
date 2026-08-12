@@ -125,10 +125,30 @@ body {
   animation: bannerRaise 320ms ease-out;
 }
 
+/* 軍隊正往這一格去。慢而弱，只是要讓視線在滿版的沙盤上找得到目標。 */
+@keyframes targetPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--bronze) 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--bronze) 0%, transparent);
+  }
+}
+
+.animate-target {
+  animation: targetPulse 1.6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-strike,
-  .animate-banner {
+  .animate-banner,
+  .animate-target {
     animation: none;
+  }
+  /* 動畫關掉之後目標格還是要看得出來，改用靜態外框。 */
+  .animate-target {
+    box-shadow: 0 0 0 2px var(--bronze);
   }
   * {
     transition-duration: 0.01ms !important;

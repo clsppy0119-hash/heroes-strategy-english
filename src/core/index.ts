@@ -22,7 +22,9 @@ export {
   GRAIN_PER_BATTLE,
   GRAIN_PER_TILE_PER_HOUR,
   HOUR_MS,
+  MARCH_BASE_MS,
   MARCH_COST,
+  MARCH_MS_PER_STEP,
   MAX_OFFLINE_MS,
   MAX_LEVEL,
   MAX_ROUNDS,
@@ -36,6 +38,15 @@ export {
 export { counterFor, defenderHpFor } from './derive';
 
 export { accrueGrain, msPerGrain, type Accrual } from './time';
+
+export {
+  hasArrived,
+  marchDurationMs,
+  marchProgress,
+  remainingMs,
+  startMarch,
+  type March,
+} from './march';
 
 export {
   CITY_X,
@@ -76,12 +87,15 @@ export {
   answerRound,
   battleId,
   battleSeed,
-  beginMarch,
   capturedCount,
   createGame,
   dismissBattle,
+  engageBattle,
   marchBlockedReason,
+  marchHasArrived,
+  orderMarch,
   ownedCount,
+  recallMarch,
   retreat,
   settleTime,
   startClock,
