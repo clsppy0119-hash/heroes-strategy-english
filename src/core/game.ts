@@ -1,4 +1,4 @@
-import { GRAIN_PER_OWNED_TILE, MARCH_COST, START_GRAIN } from './config';
+import { GRAIN_PER_BATTLE, MARCH_COST, START_GRAIN } from './config';
 import { accrueGrain } from './time';
 import {
   abandonBattle,
@@ -18,6 +18,12 @@ import { seedFrom, type RngState } from './rng';
  * 不用重寫——這是 scripts/check-core-purity.mjs 在守的東西。
  */
 
+/**
+ * `stuck` 在 v0.1 是「這一局結束了」，v0.2 起是「等糧」。
+ *
+ * 時間會自己把糧補回來（settleTime 補到夠出兵就解除），所以它不再是失敗狀態
+ * 而是一個等待狀態。介面文案要跟著改——把等待寫成 game over 會讓玩家關掉分頁。
+ */
 export type GameStatus = 'playing' | 'cleared' | 'stuck';
 
 export interface GameState {
@@ -150,9 +156,8 @@ function settle(state: GameState, battle: BattleState): GameState {
       ? state.tiles.map((tile) => (tile.id === battle.tileId ? { ...tile, owned: true } : tile))
       : state.tiles;
 
-  // 產糧不分勝敗——已佔領的地一樣在產出，那不是打贏的獎勵。
-  const owned = tiles.filter((tile) => tile.owned).length;
-  const grain = state.grain + owned * GRAIN_PER_OWNED_TILE;
+  // 繳獲不分勝敗——打輸一樣有，那不是打贏的獎勵。
+  const grain = state.grain + GRAIN_PER_BATTLE;
 
   const allTaken = tiles.every((tile) => tile.owned);
   const canAffordAnother = grain >= MARCH_COST;

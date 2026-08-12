@@ -7,18 +7,30 @@ import type { AnalyticsRecord } from './events';
  * 讓分析器不相依任何東西，就不需要為了看一份測試資料先跑打包。
  *
  * 代價是會跟 core 漂移，所以 analyze.test.ts 有一個測試盯著這兩份值一致。
+ * 地圖從 3×3 變 6×6 之後這裡從 9 筆的表改成同一條公式——三十六筆手抄的表
+ * 只會讓漂移更難發現。
  */
-const TILE_LEVELS: Readonly<Record<string, number>> = {
-  '0,0': 2,
-  '1,0': 1,
-  '2,0': 3,
-  '0,1': 1,
-  '1,1': 0,
-  '2,1': 2,
-  '0,2': 3,
-  '1,2': 2,
-  '2,2': 1,
-};
+const GRID = 6;
+const CITY = 2;
+
+function levelAt(x: number, y: number): number {
+  const distance = Math.abs(x - CITY) + Math.abs(y - CITY);
+  if (distance === 0) {
+    return 0;
+  }
+  if (distance <= 2) {
+    return 1;
+  }
+  return distance <= 4 ? 2 : 3;
+}
+
+const TILE_LEVELS: Readonly<Record<string, number>> = Object.fromEntries(
+  Array.from({ length: GRID * GRID }, (_, i) => {
+    const x = i % GRID;
+    const y = Math.floor(i / GRID);
+    return [`${x},${y}`, levelAt(x, y)];
+  }),
+);
 
 /** 最長的一場（LV.3）有三回合。 */
 const ROUNDS_PER_BATTLE = 3;

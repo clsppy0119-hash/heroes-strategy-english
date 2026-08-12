@@ -19,7 +19,7 @@ export {
   CRIT_BASE,
   CRIT_MAX,
   CRIT_STEP,
-  GRAIN_PER_OWNED_TILE,
+  GRAIN_PER_BATTLE,
   GRAIN_PER_TILE_PER_HOUR,
   HOUR_MS,
   MARCH_COST,
@@ -38,11 +38,15 @@ export { counterFor, defenderHpFor } from './derive';
 export { accrueGrain, msPerGrain, type Accrual } from './time';
 
 export {
+  CITY_X,
+  CITY_Y,
   GRID_SIZE,
   canMarchTo,
   createMap,
+  distanceFromCity,
   findTile,
   isAdjacent,
+  levelForDistance,
   marchableTiles,
   tileId,
   type Terrain,

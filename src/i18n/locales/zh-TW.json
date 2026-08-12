@@ -15,7 +15,9 @@
   "campaign.mapLabel": "戰略沙盤",
 
   "campaign.status.cleared": "全境已下。這一局結束了。",
-  "campaign.status.stuck": "糧草不足以再出兵。這一局結束了。",
+  "campaign.status.waiting": "糧草見底。屯田還在產，等糧就是了。",
+  "campaign.status.waitingIn": "約 {minutes} 分鐘後可再出兵",
+  "campaign.status.waitingSoon": "再一下就夠出兵了",
 
   "terrain.city": "主城",
   "terrain.pass": "關隘",

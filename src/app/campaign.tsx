@@ -20,6 +20,7 @@ import {
   defenderHpFor,
   dismissBattle,
   marchBlockedReason,
+  msPerGrain,
   previewDamage,
   previewMultiplier,
   ownedCount,
@@ -237,17 +238,42 @@ export function Campaign() {
         />
       )}
 
-      {game.status !== "playing" && (
+      {game.status === "cleared" ? (
         <section className="flex flex-col gap-3 border-t-2 border-vermilion bg-paper-raised p-5">
-          <p className="font-display text-lg">
-            {game.status === "cleared" ? t("campaign.status.cleared") : t("campaign.status.stuck")}
-          </p>
+          <p className="font-display text-lg">{t("campaign.status.cleared")}</p>
           <button type="button" onClick={restart} className="self-start bg-vermilion px-5 py-2 text-sm font-medium text-paper">
             {t("campaign.restart")}
           </button>
         </section>
-      )}
+      ) : game.status === "stuck" ? (
+        <WaitingForGrain game={game} onRestart={restart} />
+      ) : null}
     </div>
+  );
+}
+
+/**
+ * 糧草見底。
+ *
+ * v0.1 這裡寫的是「這一局結束了」，因為當時糧草只能從打仗來，見底就真的沒了。
+ * v0.2 有時間產出，見底變成「等一下就好」——把等待寫成 game over 會讓玩家關掉分頁，
+ * 而那正好是 v0.2 要驗的假設（隔天有東西在等你）最需要的那個時刻。
+ *
+ * 所以這裡給的是還要等多久，重開只留一條不起眼的退路。
+ */
+function WaitingForGrain({ game, onRestart }: { game: GameState; onRestart: () => void }) {
+  const minutes = Math.ceil(((MARCH_COST - game.grain) * msPerGrain(ownedCount(game))) / 60_000);
+
+  return (
+    <section className="flex flex-col gap-3 border-t-2 border-bronze bg-paper-raised p-5">
+      <p className="font-display text-lg">{t("campaign.status.waiting")}</p>
+      <p className="font-mono text-sm tabular-nums text-bronze">
+        {minutes <= 1 ? t("campaign.status.waitingSoon") : t("campaign.status.waitingIn", { minutes })}
+      </p>
+      <button type="button" onClick={onRestart} className="self-start text-sm text-ink-soft underline underline-offset-4">
+        {t("campaign.restart")}
+      </button>
+    </section>
   );
 }
 
@@ -357,7 +383,7 @@ function Sandtable({
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-soft">
           {t("campaign.mapLabel")}
         </p>
-        <div className="sandtable grid w-full max-w-sm grid-cols-3 gap-1.5 border-2 border-rule-strong bg-paper-sunk p-1.5 lg:w-80">
+        <div className="sandtable grid w-full max-w-lg grid-cols-6 gap-1 border-2 border-rule-strong bg-paper-sunk p-1.5 lg:w-[30rem]">
           {game.tiles.map((tile) => (
             <TileButton
               key={tile.id}
@@ -455,11 +481,11 @@ function TileButton({
             : "border-rule bg-paper-sunk opacity-45"
       } ${selected ? "outline outline-2 outline-offset-2 outline-vermilion" : ""}`}
     >
-      <span className={`font-display text-2xl font-bold leading-none ${owned ? "animate-banner" : ""}`}>
+      <span className={`font-display text-xl font-bold leading-none ${owned ? "animate-banner" : ""}`}>
         {terrainMark(tile.terrain)}
       </span>
       {tile.level > 0 && (
-        <span className="font-mono text-[10px] tabular-nums opacity-70">
+        <span className="font-mono text-[9px] leading-none tabular-nums opacity-70">
           {t("tile.level", { level: tile.level })}
         </span>
       )}
