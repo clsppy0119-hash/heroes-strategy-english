@@ -82,11 +82,20 @@ export const MAX_OFFLINE_MS = 8 * HOUR_MS;
 
 export const START_GRAIN = 600;
 
-/** 出兵消耗。輸三場就會卡住，這是 v0.1 唯一的失敗狀態。 */
+/** 出兵消耗。 */
 export const MARCH_COST = 200;
 
-/** 每場戰鬥結束後，每塊已佔領的地格產出。不分勝敗——產糧不是打贏的獎勵。 */
-export const GRAIN_PER_OWNED_TILE = 50;
+/**
+ * 每場戰鬥結束的戰場繳獲。不分勝敗——產糧不是打贏的獎勵。
+ *
+ * **v0.2 從「每塊已佔領地格 50」改成固定值。** 舊算法在 3×3 就已經是遞增的
+ * （八塊地時一場 400，出兵只要 200），只是被地圖大小蓋住了；6×6 有 36 塊地，
+ * 一場就繳獲 1800，糧草會在第五塊地之後徹底失去意義，連帶讓城池建築不用花錢。
+ *
+ * 固定值比出兵成本低，所以打仗本身是淨支出，糧草只能從時間來——
+ * 那正是 v0.2 要驗的假設。地多的回報改由時間產出承擔（見 time.ts）。
+ */
+export const GRAIN_PER_BATTLE = 120;
 
 /** 地格等級對到題目難度。v0.1 的題庫只有兩級。 */
 export function vocabLevelForTile(tileLevel: number): number {
