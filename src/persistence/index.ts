@@ -8,3 +8,14 @@ export {
   saveKey,
   type GameRepository,
 } from './repository';
+
+export {
+  REVIEW_KEY_PREFIX,
+  configureReviewRepository,
+  createLocalStorageReviewRepository,
+  createMemoryReviewRepository,
+  readReviewBook,
+  reviewKey,
+  reviewRepository,
+  type ReviewRepository,
+} from './review-repository';

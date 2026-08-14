@@ -1,5 +1,7 @@
 import type { RngState } from '@/core';
 
+import type { ReviewBook } from './review';
+
 /**
  * 題目來源的介面。
  *
@@ -23,6 +25,19 @@ export interface QuestionRequest {
   readonly level?: number;
   readonly excludeIds?: readonly string[];
   readonly seed: RngState;
+  /**
+   * 學習狀態。有就照複習排程出題，沒有就純隨機。
+   *
+   * 做成選填而不是必填：讀不到學習狀態（第一次玩、存檔壞掉、伺服器端 render）
+   * 時遊戲要照樣能出題，而不是整場開不起來。
+   */
+  readonly review?: ReviewContext;
+}
+
+export interface ReviewContext {
+  readonly book: ReviewBook;
+  /** 判斷到期用的現在。時間由參數注入，跟 core 同一套規約。 */
+  readonly now: number;
 }
 
 export interface ContentProvider {

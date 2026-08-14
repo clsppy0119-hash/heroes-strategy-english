@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { storedRecords, track } from "@/analytics";
-import { vocabProvider, type Question } from "@/content";
+import {
+  EMPTY_REVIEW_BOOK,
+  recordAttempt,
+  vocabProvider,
+  type Question,
+  type ReviewBook,
+} from "@/content";
 import {
   BUILDING_IDS,
   GRID_SIZE,
@@ -54,7 +60,7 @@ import {
   type Tile,
 } from "@/core";
 import { t, type MessageKey } from "@/i18n";
-import { LOCAL_PLAYER_ID, gameRepository } from "@/persistence";
+import { LOCAL_PLAYER_ID, gameRepository, reviewRepository } from "@/persistence";
 
 import { MarchColumn, useTileCenters } from "./march-column";
 
@@ -126,6 +132,15 @@ export function Campaign() {
   // 心跳存下來的「現在」。render 期間不能取時間（不純），倒數要靠這個。
   const [now, setNow] = useState<number>(CLOCK_NOT_STARTED);
 
+  /**
+   * 複習簿。跟局面分開存——重開一局會丟掉領地與糧草，
+   * 但不該丟掉「哪些字你背過」。
+   *
+   * 用 ref 而不是 state：它每一題都會變，但沒有任何畫面直接顯示它，
+   * 進 state 只會讓整棵樹白重繪一次。
+   */
+  const review = useRef<ReviewBook>(EMPTY_REVIEW_BOOK);
+
   /** 讀檔之後才開始自動存檔。不然掛載那一瞬間的空局面會蓋掉真正的存檔。 */
   const [loaded, setLoaded] = useState(false);
   /** 這次回來補到多少離線產出。零或還沒讀檔時不顯示。 */
@@ -145,6 +160,15 @@ export function Campaign() {
   useEffect(() => {
     let cancelled = false;
     const repository = gameRepository();
+
+    // 複習簿讀不到不該擋住遊戲開場，所以不跟局面的讀檔綁在一起等。
+    void reviewRepository()
+      .load(LOCAL_PLAYER_ID)
+      .then((book) => {
+        if (!cancelled) {
+          review.current = book;
+        }
+      });
 
     void repository.load(LOCAL_PLAYER_ID).then((result) => {
       if (cancelled) {
@@ -308,10 +332,12 @@ export function Campaign() {
     }
     const at = Date.now();
 
+    // 帶著複習簿去抽題：到期該複習的字會排到前面（見 content/select.ts）。
     const drawn = vocabProvider.getQuestions({
       count: roundsFor(tile.level),
       level: vocabLevelForTile(tile.level),
       seed: battleSeed(game, tile.id),
+      review: { book: review.current, now: at },
     });
 
     const next = engageBattle(
@@ -371,9 +397,23 @@ export function Campaign() {
         return;
       }
       const question = questions[battle.round];
-      const elapsedMs = Date.now() - shownAt.current;
-      const next = answerRound(game, choiceIndex, Date.now());
+      const at = Date.now();
+      const elapsedMs = at - shownAt.current;
+      const next = answerRound(game, choiceIndex, at);
       const resolved = next.battle!.log[next.battle!.log.length - 1];
+
+      /*
+        記進複習簿。跳過算答錯——玩家沒判讀出來，跟判讀錯了對學習來說
+        是同一件事，而「跳過不留紀錄」會讓不會的字永遠不進複習池。
+      */
+      review.current = recordAttempt(review.current, {
+        itemId: question.id,
+        correct: resolved.correct,
+        elapsedMs,
+        at,
+        context: battle.battleId,
+      });
+      void reviewRepository().save(LOCAL_PLAYER_ID, review.current);
 
       if (choiceIndex === null) {
         track({
@@ -458,6 +498,9 @@ export function Campaign() {
     setNow(at);
     // 存檔先清掉再寫新局面：中途當掉的話，寧可讓玩家從頭開始，
     // 也不要留下一份「一半舊一半新」的存檔。
+    //
+    // 複習簿刻意不清。重開一局丟掉的是領地與糧草，不是「哪些字你背過」——
+    // 那是玩家真正累積下來的東西，也是這個遊戲存在的理由。
     void gameRepository()
       .clear(LOCAL_PLAYER_ID)
       .then(() => setGame(createGame(SEED_TEXT, at)));
