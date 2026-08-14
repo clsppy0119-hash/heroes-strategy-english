@@ -759,6 +759,14 @@ function Sandtable({
    */
   const path = marchTile === null ? [] : marchPath(marchTile.x, marchTile.y);
   const head = march === null ? -1 : marchHeadIndex(path, marchProgress(march, now));
+  /**
+   * 抵達之後隊伍就不畫了，換成目標格脈動的「已就位」。
+   *
+   * 這個判斷不能省成「頭還沒到最後一格」：主城旁邊的地距離是 1，路線只有
+   * 主城跟目標兩格，隊伍一出發就已經在最後一格上。那是新玩家第一件會做的事，
+   * 也是最不能沒有動靜的一次。
+   */
+  const arrived = march !== null && now >= march.arrivesAt;
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
@@ -775,9 +783,9 @@ function Sandtable({
                 tile={tile}
                 marchable={marchBlockedReason(game, tile.id) === null}
                 selected={selected?.id === tile.id}
-                targeted={march?.tileId === tile.id}
                 onRoute={step > 0 && step < head}
-                marching={step > 0 && step === head && march?.tileId !== tile.id}
+                column={step > 0 && step === head ? (arrived ? "ready" : "moving") : null}
+                targeted={march?.tileId === tile.id && !arrived}
                 onSelect={onSelect}
               />
             );
@@ -937,24 +945,27 @@ function TileDetail({
   );
 }
 
+/** 隊伍在這一格：還在走，或是已經就位待命。 */
+type ColumnState = "moving" | "ready";
+
 function TileButton({
   tile,
   marchable,
   selected,
   targeted,
   onRoute,
-  marching,
+  column,
   onSelect,
 }: {
   tile: Tile;
   marchable: boolean;
   selected: boolean;
-  /** 軍隊正在往這裡去。 */
+  /** 軍隊正在往這裡去（還沒到）。 */
   targeted: boolean;
   /** 隊伍已經走過這一格。 */
   onRoute: boolean;
-  /** 隊伍此刻就在這一格。 */
-  marching: boolean;
+  /** 隊伍此刻就在這一格，null 代表不在。 */
+  column: ColumnState | null;
   onSelect: (tile: Tile) => void;
 }) {
   const owned = tile.owned;
@@ -966,7 +977,9 @@ function TileButton({
       aria-pressed={selected}
       aria-label={`${terrainName(tile.terrain)} ${t("tile.level", { level: tile.level })}${
         owned ? ` ${t("tile.owned")}` : ""
-      }${targeted ? ` ${t("march.heading")}` : ""}${marching ? ` ${t("march.column")}` : ""}`}
+      }${targeted ? ` ${t("march.heading")}` : ""}${
+        column === null ? "" : ` ${column === "ready" ? t("march.arrived") : t("march.column")}`
+      }`}
       style={{ color: owned ? undefined : `var(--terrain-${tile.terrain})` }}
       className={`relative flex aspect-square flex-col items-center justify-center gap-0.5 border transition-colors ${
         owned
@@ -974,7 +987,7 @@ function TileButton({
           : marchable
             ? "border-rule-strong bg-paper hover:bg-paper-raised"
             : "border-rule bg-paper-sunk opacity-45"
-      } ${onRoute || marching ? "route opacity-100" : ""} ${
+      } ${onRoute || column !== null ? "route opacity-100" : ""} ${
         targeted ? "animate-target border-bronze bg-paper opacity-100" : ""
       } ${selected ? "outline outline-2 outline-offset-2 outline-vermilion" : ""}`}
     >
@@ -987,12 +1000,20 @@ function TileButton({
         </span>
       )}
 
-      {/* 隊伍本體。走到哪一格就出現在哪一格，蓋在地形上面。 */}
-      {marching && (
+      {/*
+        隊伍本體。走到哪一格就出現在哪一格，蓋在地形上面。
+
+        抵達之後不收掉，改成朱紅——收掉的話畫面上會像軍隊走了，而它其實
+        正等著你下令。青銅是在路上，朱紅是就位；顏色跟已佔領的地一致，
+        因為那一格實際上已經在你手裡了，只差最後一步。
+      */}
+      {column !== null && (
         <span
-          key={tile.id}
+          key={`${tile.id}-${column}`}
           aria-hidden
-          className="animate-column absolute inset-0 flex items-center justify-center bg-bronze font-display text-xl font-bold text-paper"
+          className={`animate-column absolute inset-0 flex items-center justify-center font-display text-xl font-bold text-paper ${
+            column === "ready" ? "bg-vermilion" : "bg-bronze"
+          }`}
         >
           {t("march.mark")}
         </span>
