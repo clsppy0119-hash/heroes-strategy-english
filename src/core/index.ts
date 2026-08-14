@@ -11,6 +11,15 @@
  */
 
 export { RULES_VERSION, type RulesVersion } from './rules';
+
+export {
+  SAVE_VERSION,
+  packSave,
+  readSave,
+  type LoadFailure,
+  type LoadResult,
+  type SaveEnvelope,
+} from './save';
 export { seedFrom, nextFloat, nextInt, shuffle, type RngState } from './rng';
 
 export {
@@ -116,6 +125,7 @@ export {
   orderMarch,
   ownedCount,
   recallMarch,
+  resumeGame,
   retreat,
   settleTime,
   startClock,

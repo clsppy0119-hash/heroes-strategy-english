@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { clearStoredRecords, configureAnalytics, storedRecordCount, storedRecords, subscribe, track } from './index';
-import { MAX_STORED_RECORDS, createLocalStorageSink, createMemorySink } from './sinks';
+import type { AnalyticsRecord } from './events';
+import { MAX_STORED_RECORDS, createLocalStorageSink, createMemorySink, trimRecords } from './sinks';
 
 class FakeStorage implements Storage {
   private map = new Map<string, string>();
@@ -95,6 +96,52 @@ describe('localStorage sink', () => {
     const records = sink.read?.() ?? [];
     expect(records).toHaveLength(MAX_STORED_RECORDS);
     expect(records[0].ts).toBe(20);
+  });
+
+  /**
+   * 有存檔之後玩家會跨天回來，而隔日回訪只需要 session 邊界。
+   * 一題一筆的作答紀錄很多、session 邊界很少，所以砍的時候要先砍前者——
+   * 直接砍最舊的那一段，最先消失的正好是最早那幾天的 session_start。
+   */
+  it('丟舊資料時保留 session 邊界', () => {
+    const noise: AnalyticsRecord[] = Array.from({ length: 50 }, (_, i) => ({
+      schemaVersion: 0,
+      sessionId: 's',
+      ts: i,
+      event: { type: 'selfcheck_ping', note: String(i) },
+    }));
+    const session: AnalyticsRecord = {
+      schemaVersion: 0,
+      sessionId: 'oldest',
+      ts: -1,
+      event: { type: 'session_start', sinceLastSaveMs: null, loaded: 'empty', offlineGrain: 0 },
+    };
+
+    const trimmed = trimRecords([session, ...noise], 10);
+
+    expect(trimmed).toHaveLength(10);
+    expect(trimmed[0]).toBe(session);
+    // 最舊的 session 活下來，被砍掉的是中間那堆作答紀錄。
+    expect(trimmed.slice(1).every((record) => record.event.type === 'selfcheck_ping')).toBe(true);
+  });
+
+  it('沒超過上限就原封不動', () => {
+    const records: AnalyticsRecord[] = [
+      { schemaVersion: 0, sessionId: 's', ts: 1, event: { type: 'selfcheck_ping', note: 'a' } },
+    ];
+    expect(trimRecords(records, 10)).toEqual(records);
+  });
+
+  it('連 session 邊界都放不下時，留最近的那些', () => {
+    const sessions: AnalyticsRecord[] = Array.from({ length: 20 }, (_, i) => ({
+      schemaVersion: 0,
+      sessionId: `s${i}`,
+      ts: i,
+      event: { type: 'session_end', durationMs: i, battlesStarted: 0, battlesFinished: 0 },
+    }));
+    const trimmed = trimRecords(sessions, 5);
+    expect(trimmed).toHaveLength(5);
+    expect(trimmed[trimmed.length - 1].ts).toBe(19);
   });
 
   it('資料壞掉時回傳空陣列而不是丟錯', () => {

@@ -50,6 +50,11 @@
   "build.underway": "施工中．{until}",
   "build.until": "還要 {duration}",
   "build.minutes": "{minutes} 分",
+  "build.hours": "{hours} 小時",
+
+  "resume.heading": "主公回來了",
+  "resume.summary": "離開了 {away}，屯田送上糧草 {grain}。",
+  "resume.dismiss": "知道了",
   "build.start": "動工",
   "build.maxed": "已至頂級",
   "build.blocked.busy": "工隊在別處",
