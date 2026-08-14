@@ -14,6 +14,7 @@ import {
 import { HOUR_MS } from './config';
 import { CITY_X, CITY_Y, tileId } from './map';
 import { RULES_VERSION } from './rules';
+import { startReturn } from './march';
 import { SAVE_VERSION, packSave, readSave } from './save';
 
 const T0 = 1_700_000_000_000;
@@ -63,6 +64,21 @@ describe('存檔來回一趟', () => {
     expect(result.ok && result.state.march).toEqual(marching.march);
   });
 
+  /**
+   * 班師的目標地通常已經是自己的（剛打贏的那一塊），所以驗證不能一律要求
+   * 「行軍目標必須是還沒佔領的地」——那條規則只對去程成立。
+   */
+  it('班師途中存檔，回程留著', () => {
+    const base = createGame('s', T0);
+    const returning: GameState = {
+      ...base,
+      tiles: base.tiles.map((tile) => (tile.id === NEAR ? { ...tile, owned: true } : tile)),
+      march: startReturn(NEAR, CITY_X + 1, CITY_Y, 0, T0),
+    };
+    const result = readSave(write(returning));
+    expect(result.ok && result.state.march).toEqual(returning.march);
+  });
+
   it('記得存檔時間', () => {
     expect(readSave(write(createGame('s', T0), T0 + 999))).toMatchObject({ savedAt: T0 + 999 });
   });
@@ -90,6 +106,10 @@ describe('版本', () => {
   it('沒有存檔就是沒有，不是壞掉', () => {
     expect(readSave(null)).toEqual({ ok: false, reason: 'empty' });
     expect(readSave('')).toEqual({ ok: false, reason: 'empty' });
+  });
+
+  it('目前的存檔版本是 2——行軍加了方向欄位', () => {
+    expect(SAVE_VERSION).toBe(2);
   });
 
   it('外殼形狀變了就作廢', () => {
@@ -183,6 +203,12 @@ describe('壞掉的存檔一律作廢，不會讓遊戲掛掉', () => {
     },
     '行軍不是物件': (state) => {
       state.march = 42;
+    },
+    '行軍沒有標明方向——不知道要去哪還是要回來': (state) => {
+      state.march = { tileId: NEAR, departedAt: T0, arrivesAt: T0 + 1000 };
+    },
+    '行軍的方向不是認得的值': (state) => {
+      state.march = { tileId: NEAR, departedAt: T0, arrivesAt: T0 + 1000, heading: 'sideways' };
     },
   };
 

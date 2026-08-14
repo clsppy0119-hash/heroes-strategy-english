@@ -24,6 +24,7 @@ import {
   type GameState,
 } from './game';
 import { CITY_X, CITY_Y, canMarchTo, tileId } from './map';
+import { RETURN_RATIO } from './march';
 
 const questions: RoundQuestion[] = Array.from({ length: MAX_ROUNDS }, (_, i) => ({
   id: `q${i}`,
@@ -51,11 +52,21 @@ function engage(state: GameState, id: string): GameState {
   return engageBattle(ordered, questions, ordered.march!.arrivesAt);
 }
 
+/**
+ * 關掉戰報並讓隊伍到家。
+ *
+ * 直接把回程拿掉而不是用 settleTime 走完——補算會順便產糧，
+ * 而下面好幾個測試在驗糧草的精確值。班師本身另外有一組測試。
+ */
+function atHome(state: GameState): GameState {
+  return { ...dismissBattle(state), march: null };
+}
+
 /** 一路答對直到戰鬥結束。 */
 function winBattle(state: GameState, id: string): GameState {
   let next = engage(state, id);
   while (next.battle !== null && next.battle.outcome === 'ongoing') {
-    next = answerRound(next, 1);
+    next = answerRound(next, 1, T0);
   }
   return next;
 }
@@ -64,7 +75,7 @@ function winBattle(state: GameState, id: string): GameState {
 function skipBattle(state: GameState, id: string): GameState {
   let next = engage(state, id);
   while (next.battle !== null && next.battle.outcome === 'ongoing') {
-    next = answerRound(next, null);
+    next = answerRound(next, null, T0);
   }
   return next;
 }
@@ -76,7 +87,7 @@ function openRoadToFar(state: GameState): GameState {
     if (next.tiles.some((tile) => tile.id === id && tile.owned)) {
       continue;
     }
-    next = dismissBattle(winBattle({ ...next, grain: START_GRAIN }, id));
+    next = atHome(winBattle({ ...next, grain: START_GRAIN }, id));
   }
   return { ...next, grain: START_GRAIN };
 }
@@ -112,7 +123,7 @@ describe('出兵限制', () => {
   });
 
   it('打下之後更外面那圈就相鄰了', () => {
-    const state = dismissBattle(winBattle(createGame('s', T0), NEAR));
+    const state = atHome(winBattle(createGame('s', T0), NEAR));
     expect(marchBlockedReason(state, NEAR2)).toBeNull();
   });
 
@@ -193,13 +204,93 @@ describe('行軍', () => {
     expect(recallMarch(state)).toBe(state);
   });
 
-  /** 離開再回來的那條路徑：抵達的軍隊要一直等在那裡，不會自己開打也不會消失。 */
-  it('離線很久回來，軍隊還在原地等接敵', () => {
+  /** 離開再回來的那條路徑：抵達的軍隊要一直等在那裡，core 不會自己替它開打。 */
+  it('離線很久回來，軍隊還在原地等著開打', () => {
     const state = orderMarch(createGame('s', T0), NEAR, T0);
     const muchLater = T0 + 86_400_000;
     expect(marchHasArrived(state, muchLater)).toBe(true);
     expect(state.battle).toBeNull();
     expect(engageBattle(state, questions, muchLater).battle?.tileId).toBe(NEAR);
+  });
+});
+
+/**
+ * 打完要走回來。回程是狀態不是動畫——軍隊在路上就不能再出兵，
+ * 而那段時間要撐得過關掉分頁。
+ */
+describe('班師', () => {
+  it('打完就上路回家', () => {
+    const state = winBattle(createGame('s', T0), NEAR);
+    expect(state.march?.heading).toBe('home');
+    expect(state.march?.tileId).toBe(NEAR);
+  });
+
+  it('打輸也要走回來', () => {
+    const state = skipBattle(openRoadToFar(createGame('s', T0)), FAR);
+    expect(state.battle?.outcome).toBe('lost');
+    expect(state.march?.heading).toBe('home');
+  });
+
+  it('鳴金收兵也要走回來', () => {
+    const state = retreat(engage(createGame('s', T0), NEAR), T0);
+    expect(state.march?.heading).toBe('home');
+  });
+
+  it('回程是去程的一半', () => {
+    const ready = openRoadToFar(createGame('s', T0));
+    const outbound = orderMarch(ready, FAR, T0).march!.arrivesAt - T0;
+
+    const back = winBattle(ready, FAR);
+    const inbound = back.march!.arrivesAt - back.march!.departedAt;
+
+    expect(inbound).toBe(Math.round(outbound * RETURN_RATIO));
+    expect(inbound).toBeLessThan(outbound);
+  });
+
+  it('人還沒到家就不能再出兵', () => {
+    const state = dismissBattle(winBattle(createGame('s', T0), NEAR));
+    expect(state.march?.heading).toBe('home');
+    expect(marchBlockedReason(state, NEAR2)).toBe('marching');
+  });
+
+  it('到家之後補算會把隊伍收掉，就能再出兵了', () => {
+    const state = dismissBattle(winBattle(createGame('s', T0), NEAR));
+    const home = settleTime(state, state.march!.arrivesAt);
+    expect(home.march).toBeNull();
+    expect(marchBlockedReason(home, NEAR2)).toBeNull();
+  });
+
+  it('還沒到家的時候補算不會提早收掉', () => {
+    const state = dismissBattle(winBattle(createGame('s', T0), NEAR));
+    expect(settleTime(state, state.march!.arrivesAt - 1).march?.heading).toBe('home');
+  });
+
+  /** 玩家不在的時候隊伍一樣會走到家，回來就能直接再出兵。 */
+  it('離線很久回來，隊伍早就到家了', () => {
+    const state = dismissBattle(winBattle(createGame('s', T0), NEAR));
+    expect(settleTime(state, T0 + 86_400_000).march).toBeNull();
+  });
+
+  it('回程不能拿來接敵', () => {
+    const state = dismissBattle(winBattle(createGame('s', T0), NEAR));
+    expect(() => engageBattle(state, questions, state.march!.arrivesAt)).toThrow();
+  });
+
+  it('回程不能鳴金——那趟已經打完了，沒有東西可以退', () => {
+    const state = dismissBattle(winBattle(createGame('s', T0), NEAR));
+    expect(recallMarch(state)).toBe(state);
+  });
+
+  it('驛站也讓回程變快', () => {
+    const base = winBattle(createGame('s', T0), NEAR);
+    const withRelay: GameState = {
+      ...createGame('s', T0),
+      buildings: { ...createBuildings(), relay: { level: 1, completesAt: null } },
+    };
+    const faster = winBattle(withRelay, NEAR);
+    expect(faster.march!.arrivesAt - faster.march!.departedAt).toBeLessThan(
+      base.march!.arrivesAt - base.march!.departedAt,
+    );
   });
 });
 
@@ -294,7 +385,7 @@ describe('失敗狀態', () => {
     let state = openRoadToFar(createGame('s', T0));
     let guard = 0;
     while (state.status === 'playing' && guard < 30) {
-      state = dismissBattle(skipBattle(state, FAR));
+      state = atHome(skipBattle(state, FAR));
       guard += 1;
     }
     expect(state.status).toBe('stuck');
@@ -309,7 +400,7 @@ describe('失敗狀態', () => {
 
 describe('retreat', () => {
   it('算成敗仗且糧草不退', () => {
-    const state = retreat(engage(createGame('s', T0), NEAR));
+    const state = retreat(engage(createGame('s', T0), NEAR), T0);
     expect(state.battle?.outcome).toBe('lost');
     expect(state.grain).toBeLessThan(START_GRAIN);
     expect(capturedCount(state)).toBe(0);
@@ -317,7 +408,7 @@ describe('retreat', () => {
 
   it('沒在打的時候呼叫不會有事', () => {
     const state = createGame('s', T0);
-    expect(retreat(state)).toBe(state);
+    expect(retreat(state, T0)).toBe(state);
   });
 });
 
@@ -325,7 +416,7 @@ describe('一局的進展', () => {
   it('連下三塊地', () => {
     let state = createGame('s', T0);
     for (const id of [NEAR, tileId(CITY_X, CITY_Y - 1), tileId(CITY_X - 1, CITY_Y)]) {
-      state = dismissBattle(winBattle({ ...state, grain: START_GRAIN }, id));
+      state = atHome(winBattle({ ...state, grain: START_GRAIN }, id));
     }
     expect(capturedCount(state)).toBe(3);
     expect(state.battlesWon).toBe(3);
@@ -342,7 +433,7 @@ describe('一局的進展', () => {
     while (state.status !== 'cleared' && guard < 100) {
       const next = state.tiles.find((tile) => canMarchTo(state.tiles, tile));
       expect(next).toBeDefined();
-      state = dismissBattle(winBattle({ ...state, grain: START_GRAIN }, next!.id));
+      state = atHome(winBattle({ ...state, grain: START_GRAIN }, next!.id));
       guard += 1;
     }
     expect(state.status).toBe('cleared');
@@ -352,8 +443,8 @@ describe('一局的進展', () => {
   it('同樣的操作序列給同樣的結果', () => {
     const run = () => {
       let state = createGame('replay', T0);
-      state = dismissBattle(winBattle(state, NEAR));
-      state = dismissBattle(skipBattle(openRoadToFar(state), FAR));
+      state = atHome(winBattle(state, NEAR));
+      state = atHome(skipBattle(openRoadToFar(state), FAR));
       return state;
     };
     expect(run()).toEqual(run());

@@ -68,11 +68,15 @@ export {
 export { accrueGrain, msPerGrain, type Accrual } from './time';
 
 export {
+  RETURN_RATIO,
   hasArrived,
   marchDurationMs,
   marchProgress,
   remainingMs,
+  returnDurationMs,
   startMarch,
+  startReturn,
+  type Heading,
   type March,
 } from './march';
 
@@ -126,6 +130,7 @@ export {
   marchHasArrived,
   orderMarch,
   ownedCount,
+  readyToEngage,
   recallMarch,
   resumeGame,
   retreat,

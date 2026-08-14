@@ -41,8 +41,10 @@
   "march.arrivedHeading": "兵臨城下",
   "march.remaining": "還要 {seconds} 秒",
   "march.arrived": "軍隊已就位，等你下令",
-  "march.engage": "接敵",
   "march.recall": "鳴金",
+  "march.homeHeading": "班師回朝",
+  "march.homeRemaining": "還有 {seconds} 秒到家",
+  "march.home": "已回到主城",
   "march.mark": "兵",
   "march.column": "隊伍在此",
 
