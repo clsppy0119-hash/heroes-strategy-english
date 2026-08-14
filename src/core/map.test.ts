@@ -10,6 +10,8 @@ import {
   distanceFromCity,
   findTile,
   levelForDistance,
+  marchHeadIndex,
+  marchPath,
   marchableTiles,
   tileId,
   type Tile,
@@ -79,6 +81,69 @@ describe('等級配置站得住', () => {
   it('入門坡比終點寬——LV.1 的地比 LV.3 多', () => {
     const count = (level: number) => attackable.filter((tile) => tile.level === level).length;
     expect(count(1)).toBeGreaterThan(count(3));
+  });
+});
+
+/**
+ * 行軍路線只給眼睛看，不影響任何規則。但它是行軍時間那條規則的解釋——
+ * 遠的地方久，是因為路真的長。所以路線的長度必須跟距離對得上，
+ * 否則畫面會在無聲地說謊。
+ */
+describe('行軍路線', () => {
+  it('從主城出發，走到目標', () => {
+    const path = marchPath(5, 5);
+    expect(path[0]).toBe(tileId(CITY_X, CITY_Y));
+    expect(path[path.length - 1]).toBe(tileId(5, 5));
+  });
+
+  it('走的格數就是行軍時間用的那個距離', () => {
+    for (const tile of tiles) {
+      expect(marchPath(tile.x, tile.y).length - 1).toBe(distanceFromCity(tile.x, tile.y));
+    }
+  });
+
+  it('每一步都只走一格，不會斜著飛過去', () => {
+    const path = marchPath(0, 5).map((id) => findTile(tiles, id)!);
+    for (let i = 1; i < path.length; i += 1) {
+      expect(Math.abs(path[i].x - path[i - 1].x) + Math.abs(path[i].y - path[i - 1].y)).toBe(1);
+    }
+  });
+
+  it('打主城旁邊就只有兩格', () => {
+    expect(marchPath(CITY_X + 1, CITY_Y)).toHaveLength(2);
+  });
+
+  it('同一個目標永遠走同一條路——不然畫面每次重畫都會跳', () => {
+    expect(marchPath(4, 1)).toEqual(marchPath(4, 1));
+  });
+
+  it('隊伍的位置從頭走到尾', () => {
+    const path = marchPath(5, 5);
+    expect(marchHeadIndex(path, 0.5)).toBeGreaterThan(1);
+    expect(marchHeadIndex(path, 1)).toBe(path.length - 1);
+  });
+
+  /** 下令之後畫面上要馬上有東西動，不然玩家會以為沒按到。 */
+  it('一下令隊伍就離開主城，不會停在原地', () => {
+    expect(marchHeadIndex(marchPath(5, 5), 0)).toBe(1);
+  });
+
+  it('進度超出範圍也不會走到路線外面', () => {
+    const path = marchPath(3, 2);
+    expect(marchHeadIndex(path, -5)).toBe(1);
+    expect(marchHeadIndex(path, 99)).toBe(path.length - 1);
+  });
+
+  it('隊伍一格一格前進，不會跳格', () => {
+    const path = marchPath(5, 5);
+    let previous = marchHeadIndex(path, 0);
+    for (let p = 0; p <= 1.0001; p += 0.01) {
+      const head = marchHeadIndex(path, p);
+      expect(head - previous).toBeLessThanOrEqual(1);
+      expect(head).toBeGreaterThanOrEqual(previous);
+      previous = head;
+    }
+    expect(previous).toBe(path.length - 1);
   });
 });
 
