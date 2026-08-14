@@ -27,11 +27,18 @@ describe('recordAttempt', () => {
     expect(book.v001.lastSeenAt).toBe(300);
   });
 
-  it('SRS 欄位保持 null，等 v0.2 填', () => {
+  /** v0.1 這裡驗的是「三個欄位保持 null」。v0.2 把它們填起來了。 */
+  it('作答之後 SRS 欄位就有值了', () => {
     const book = recordAttempt(EMPTY_REVIEW_BOOK, attempt('v001', true, 100));
-    expect(book.v001.stability).toBeNull();
-    expect(book.v001.difficulty).toBeNull();
-    expect(book.v001.dueAt).toBeNull();
+    expect(book.v001.stability).toBeGreaterThan(0);
+    expect(book.v001.difficulty).toBeGreaterThanOrEqual(0);
+    expect(book.v001.dueAt).toBeGreaterThan(100);
+  });
+
+  it('答錯的字排得比答對的早', () => {
+    const wrong = recordAttempt(EMPTY_REVIEW_BOOK, attempt('v001', false, 100));
+    const right = recordAttempt(EMPTY_REVIEW_BOOK, attempt('v002', true, 100));
+    expect(wrong.v001.dueAt!).toBeLessThan(right.v002.dueAt!);
   });
 
   it('不改動輸入', () => {

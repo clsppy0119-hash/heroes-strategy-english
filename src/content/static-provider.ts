@@ -1,6 +1,7 @@
 import { MAX_ROUNDS, nextInt, shuffle, type RngState } from '@/core';
 
 import type { ContentProvider, Question, QuestionRequest } from './provider';
+import { orderCandidates } from './select';
 
 /**
  * 從固定題庫出題。v0.1 唯一的實作，也是之後所有 AI 來源的 fallback。
@@ -22,15 +23,18 @@ export function createStaticProvider(bank: readonly VocabEntry[]): ContentProvid
   return {
     name: 'static',
     getQuestions(request: QuestionRequest): readonly Question[] {
-      const excluded = new Set(request.excludeIds ?? []);
-      const pool = bank.filter(
-        (entry) => !excluded.has(entry.id) && (request.level === undefined || entry.level === request.level),
-      );
+      // 出哪幾個字由 select.ts 決定（到期的優先），這裡只負責把字包成題目。
+      const ordered = orderCandidates(bank, {
+        count: request.count,
+        level: request.level,
+        excludeIds: request.excludeIds,
+        seed: request.seed,
+        book: request.review?.book,
+        now: request.review?.now,
+      });
 
+      // 選項的亂數從同一顆種子往下走，所以同樣的輸入永遠給同樣的題目。
       let state: RngState = request.seed;
-      const [ordered, afterShuffle] = shuffle(pool, state);
-      state = afterShuffle;
-
       const picked = ordered.slice(0, request.count);
       const questions: Question[] = [];
 
