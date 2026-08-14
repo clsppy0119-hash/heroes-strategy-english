@@ -1,3 +1,14 @@
+import {
+  BUILDING_IDS,
+  createBuildings,
+  grainPerHour,
+  maxLevelOf,
+  offlineCapMs,
+  upgradeCost,
+  upgradeMs,
+  type BuildingId,
+  type Buildings,
+} from './buildings';
 import { GRAIN_PER_BATTLE, MARCH_COST, START_GRAIN } from './config';
 import { accrueGrain } from './time';
 import {
@@ -32,6 +43,7 @@ export interface GameState {
   readonly seed: RngState;
   readonly tiles: readonly Tile[];
   readonly grain: number;
+  readonly buildings: Buildings;
   /** 在路上的那支軍隊。抵達之後還是留在這裡，等玩家按「接敵」才轉成戰鬥。 */
   readonly march: March | null;
   readonly battle: BattleState | null;
@@ -50,6 +62,7 @@ export function createGame(seedText: string, now: number): GameState {
     seed: seedFrom(seedText),
     tiles: createMap(),
     grain: START_GRAIN,
+    buildings: createBuildings(),
     march: null,
     battle: null,
     battlesStarted: 0,
@@ -75,24 +88,124 @@ export function startClock(state: GameState, now: number): GameState {
 export const CLOCK_NOT_STARTED = 0;
 
 /**
- * 補算時間產出。
+ * 補算時間產出，順便讓期間完工的建築生效。
  *
  * 每個會改變局面的動作都要先呼叫它，否則新佔領的地會回頭替過去的時間產糧。
  * 重複呼叫是安全的：不足一顆糧的零頭留在帳上，不會被無條件捨去。
+ *
+ * ## 為什麼要分段
+ *
+ * 屯田完工會把產速調上去。離線八小時、屯田在第三小時完工的話，
+ * 前三小時該用舊速率、後五小時該用新速率。一律用完工後的速率會多發糧，
+ * 一律用舊速率則等於建築白蓋了幾小時——兩種都是玩家看不出來但確實錯的帳。
+ *
+ * 所以這裡在每個完工時刻切一刀：補算到那一刻、套用完工、再繼續。
+ *
+ * 分段交界處會有一點誤差：上一段留在帳上的零頭（不足一顆糧的時間）
+ * 會用下一段的速率折算，等於多給了不到一顆糧。一局最多切三刀，
+ * 那個量比一次戰鬥的繳獲小三個數量級，換來的是不用在狀態裡多存一個小數欄位。
+ *
+ * ## 離線上限用的是離開時的糧倉等級
+ *
+ * 上限本身也會被糧倉改變，讓它在補算途中變動會讓「能補算多久」變成
+ * 一個遞迴問題。取離開那一刻的等級單純得多，而且說得通：
+ * 你離開時的倉庫有多大，就存得下多少。
  */
 export function settleTime(state: GameState, now: number): GameState {
-  const accrual = accrueGrain(ownedCount(state), state.settledAt, now);
+  const capMs = offlineCapMs(state.buildings.granary.level);
+
+  // 這段期間完工的建築，按完工時間排序——順序錯了速率就套錯區間。
+  const finishing = BUILDING_IDS.filter((id) => {
+    const at = state.buildings[id].completesAt;
+    return at !== null && at > state.settledAt && at <= now;
+  }).sort((a, b) => state.buildings[a].completesAt! - state.buildings[b].completesAt!);
+
+  let current = state;
+  for (const id of finishing) {
+    current = accrueInto(current, current.buildings[id].completesAt!, capMs);
+    current = {
+      ...current,
+      buildings: {
+        ...current.buildings,
+        [id]: { level: current.buildings[id].level + 1, completesAt: null },
+      },
+    };
+  }
+  current = accrueInto(current, now, capMs);
+
+  if (current === state) {
+    return state;
+  }
+  return {
+    ...current,
+    // 補算完可能就有糧再出兵了，卡住的狀態要跟著解除。
+    status: current.status === 'stuck' && current.grain >= MARCH_COST ? 'playing' : current.status,
+  };
+}
+
+/** 用目前的速率把時間補算到 `until`。速率不變的一段。 */
+function accrueInto(state: GameState, until: number, capMs: number): GameState {
+  const accrual = accrueGrain(
+    grainPerHour(ownedCount(state), state.buildings.farm.level),
+    state.settledAt,
+    until,
+    capMs,
+  );
   if (accrual.grain === 0 && accrual.settledAt === state.settledAt && accrual.forfeitedMs === 0) {
     return state;
   }
-  const grain = state.grain + accrual.grain;
   return {
     ...state,
-    grain,
+    grain: state.grain + accrual.grain,
     settledAt: accrual.settledAt,
     forfeitedMs: state.forfeitedMs + accrual.forfeitedMs,
-    // 補算完可能就有糧再出兵了，卡住的狀態要跟著解除。
-    status: state.status === 'stuck' && grain >= MARCH_COST ? 'playing' : state.status,
+  };
+}
+
+export type UpgradeBlockedReason = 'busy' | 'max-level' | 'not-enough-grain';
+
+/** 擋下動工的理由，null 代表蓋得了。 */
+export function upgradeBlockedReason(
+  state: GameState,
+  id: BuildingId,
+  now: number,
+): UpgradeBlockedReason | null {
+  if (state.buildings[id].level >= maxLevelOf(id)) {
+    return 'max-level';
+  }
+  // 主城只有一支工隊。同時能蓋三座的話，開場把糧一次花光就無事可做了。
+  if (BUILDING_IDS.some((each) => isUnderConstruction(state, each, now))) {
+    return 'busy';
+  }
+  if (state.grain < upgradeCost(id, state.buildings[id].level)) {
+    return 'not-enough-grain';
+  }
+  return null;
+}
+
+export function isUnderConstruction(state: GameState, id: BuildingId, now: number): boolean {
+  const at = state.buildings[id].completesAt;
+  return at !== null && at > now;
+}
+
+/**
+ * 動工。扣糧，記下完工時間——等級要等 settleTime 走到那一刻才會漲。
+ *
+ * 呼叫端要先 settleTime 再動工，否則這次升級的產速會回頭套到過去的時間。
+ */
+export function startUpgrade(state: GameState, id: BuildingId, now: number): GameState {
+  const blocked = upgradeBlockedReason(state, id, now);
+  if (blocked !== null) {
+    throw new Error(`cannot upgrade ${id}: ${blocked}`);
+  }
+  const level = state.buildings[id].level;
+  return {
+    ...state,
+    grain: state.grain - upgradeCost(id, level),
+    buildings: {
+      ...state.buildings,
+      [id]: { level, completesAt: now + upgradeMs(id, level) },
+    },
   };
 }
 
@@ -153,7 +266,7 @@ export function orderMarch(state: GameState, id: TileId, now: number): GameState
   return {
     ...state,
     grain: state.grain - MARCH_COST,
-    march: startMarch(id, tile.x, tile.y, now),
+    march: startMarch(id, tile.x, tile.y, state.buildings.relay.level, now),
   };
 }
 

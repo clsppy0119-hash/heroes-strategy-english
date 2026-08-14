@@ -26,6 +26,28 @@ export interface MarchOrdered {
   readonly durationMs: number;
 }
 
+/** 城池動工。 */
+export interface BuildingStarted {
+  readonly type: 'building_started';
+  readonly building: string;
+  readonly toLevel: number;
+  readonly cost: number;
+  readonly buildMs: number;
+}
+
+/**
+ * 城池完工。
+ *
+ * 完工是補算時間時算出來的，不是玩家按出來的，所以這個事件的時間戳
+ * 是「玩家下次打開遊戲」而不是「工程結束」。兩者的差距正是 v0.2 要問的：
+ * 蓋了東西的人，隔多久回來看。
+ */
+export interface BuildingCompleted {
+  readonly type: 'building_completed';
+  readonly building: string;
+  readonly level: number;
+}
+
 /** 鳴金收兵，軍隊還沒接敵就撤回。 */
 export interface MarchRecalled {
   readonly type: 'march_recalled';
@@ -105,6 +127,8 @@ export interface SelfCheckPing {
 }
 
 export type AnalyticsEvent =
+  | BuildingStarted
+  | BuildingCompleted
   | MarchOrdered
   | MarchRecalled
   | BattleStart

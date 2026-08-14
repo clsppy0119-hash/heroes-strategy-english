@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { RoundQuestion } from './battle';
 
 const T0 = 1_700_000_000_000;
+import { createBuildings, maxLevelOf, upgradeCost, upgradeMs } from './buildings';
 import { GRAIN_PER_BATTLE, MARCH_COST, MAX_ROUNDS, START_GRAIN } from './config';
 import {
   answerRound,
@@ -10,12 +11,16 @@ import {
   createGame,
   dismissBattle,
   engageBattle,
+  isUnderConstruction,
   marchBlockedReason,
   marchHasArrived,
   orderMarch,
   ownedCount,
   recallMarch,
   retreat,
+  settleTime,
+  startUpgrade,
+  upgradeBlockedReason,
   type GameState,
 } from './game';
 import { CITY_X, CITY_Y, canMarchTo, tileId } from './map';
@@ -195,6 +200,58 @@ describe('行軍', () => {
     expect(marchHasArrived(state, muchLater)).toBe(true);
     expect(state.battle).toBeNull();
     expect(engageBattle(state, questions, muchLater).battle?.tileId).toBe(NEAR);
+  });
+});
+
+describe('城池建築', () => {
+  const rich = (): GameState => ({ ...createGame('build', T0), grain: 100_000 });
+
+  it('動工先扣糧，等級還沒漲', () => {
+    const state = startUpgrade(rich(), 'farm', T0);
+    expect(state.grain).toBe(100_000 - upgradeCost('farm', 0));
+    expect(state.buildings.farm.level).toBe(0);
+    expect(state.buildings.farm.completesAt).toBe(T0 + upgradeMs('farm', 0));
+  });
+
+  it('工期沒到就還在蓋', () => {
+    const state = startUpgrade(rich(), 'farm', T0);
+    expect(isUnderConstruction(state, 'farm', T0 + 1)).toBe(true);
+    expect(isUnderConstruction(state, 'farm', state.buildings.farm.completesAt!)).toBe(false);
+  });
+
+  it('一次只能蓋一座——主城只有一支工隊', () => {
+    const state = startUpgrade(rich(), 'farm', T0);
+    expect(upgradeBlockedReason(state, 'relay', T0)).toBe('busy');
+    expect(() => startUpgrade(state, 'relay', T0)).toThrow();
+  });
+
+  it('蓋完就能蓋下一座', () => {
+    const state = settleTime(startUpgrade(rich(), 'farm', T0), T0 + upgradeMs('farm', 0));
+    expect(upgradeBlockedReason(state, 'relay', state.settledAt)).toBeNull();
+  });
+
+  it('糧草不足擋下動工', () => {
+    const poor: GameState = { ...createGame('b', T0), grain: 0 };
+    expect(upgradeBlockedReason(poor, 'farm', T0)).toBe('not-enough-grain');
+  });
+
+  it('滿級之後蓋不動', () => {
+    const maxed: GameState = {
+      ...rich(),
+      buildings: { ...createBuildings(), granary: { level: maxLevelOf('granary'), completesAt: null } },
+    };
+    expect(upgradeBlockedReason(maxed, 'granary', T0)).toBe('max-level');
+  });
+
+  /** 驛站的效果要在下令出兵的那一刻就算進去，不是抵達時才追認。 */
+  it('驛站蓋好之後行軍變快', () => {
+    const before = orderMarch(rich(), NEAR, T0);
+    const withRelay: GameState = {
+      ...rich(),
+      buildings: { ...createBuildings(), relay: { level: 1, completesAt: null } },
+    };
+    const after = orderMarch(withRelay, NEAR, T0);
+    expect(after.march!.arrivesAt - T0).toBeLessThan(before.march!.arrivesAt - T0);
   });
 });
 

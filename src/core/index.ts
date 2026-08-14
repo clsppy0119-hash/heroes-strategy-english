@@ -37,6 +37,25 @@ export {
 
 export { counterFor, defenderHpFor } from './derive';
 
+export {
+  BUILDING_IDS,
+  BUILDING_SPECS,
+  FARM_BONUS_PER_LEVEL,
+  GRANARY_BONUS_MS,
+  RELAY_BONUS_PER_LEVEL,
+  createBuildings,
+  grainPerHour,
+  marchSpeedFactor,
+  maxLevelOf,
+  offlineCapMs,
+  upgradeCost,
+  upgradeMs,
+  type Building,
+  type BuildingId,
+  type BuildingSpec,
+  type Buildings,
+} from './buildings';
+
 export { accrueGrain, msPerGrain, type Accrual } from './time';
 
 export {
@@ -91,6 +110,7 @@ export {
   createGame,
   dismissBattle,
   engageBattle,
+  isUnderConstruction,
   marchBlockedReason,
   marchHasArrived,
   orderMarch,
@@ -99,8 +119,11 @@ export {
   retreat,
   settleTime,
   startClock,
+  startUpgrade,
+  upgradeBlockedReason,
   CLOCK_NOT_STARTED,
   type GameState,
   type GameStatus,
   type MarchBlockedReason,
+  type UpgradeBlockedReason,
 } from './game';
