@@ -1,3 +1,4 @@
+import { marchSpeedFactor } from './buildings';
 import { MARCH_BASE_MS, MARCH_MS_PER_STEP } from './config';
 import { distanceFromCity, type TileId } from './map';
 
@@ -32,12 +33,23 @@ export interface March {
 }
 
 /** 走一趟要多久。core 不能自己取時間，所以這裡只回傳長度。 */
-export function marchDurationMs(tileX: number, tileY: number): number {
-  return MARCH_BASE_MS + MARCH_MS_PER_STEP * distanceFromCity(tileX, tileY);
+export function marchDurationMs(tileX: number, tileY: number, relayLevel: number): number {
+  const base = MARCH_BASE_MS + MARCH_MS_PER_STEP * distanceFromCity(tileX, tileY);
+  return Math.round(base * marchSpeedFactor(relayLevel));
 }
 
-export function startMarch(tileId: TileId, tileX: number, tileY: number, now: number): March {
-  return { tileId, departedAt: now, arrivesAt: now + marchDurationMs(tileX, tileY) };
+export function startMarch(
+  tileId: TileId,
+  tileX: number,
+  tileY: number,
+  relayLevel: number,
+  now: number,
+): March {
+  return {
+    tileId,
+    departedAt: now,
+    arrivesAt: now + marchDurationMs(tileX, tileY, relayLevel),
+  };
 }
 
 export function hasArrived(march: March, now: number): boolean {

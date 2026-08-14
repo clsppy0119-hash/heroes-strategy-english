@@ -1,4 +1,4 @@
-import { GRAIN_PER_TILE_PER_HOUR, HOUR_MS, MAX_OFFLINE_MS } from './config';
+import { HOUR_MS } from './config';
 
 /**
  * 時間軸。
@@ -37,33 +37,39 @@ export interface Accrual {
  * 刻意以「產出一顆糧要多少毫秒」為單位推進，而不是先乘再取整：
  * 後者在被頻繁呼叫時會一直把不足一顆的零頭無條件捨去，玩家的產出會憑空蒸發。
  * 這裡只把「真的換成糧的那段時間」推掉，剩下的留到下次。
+ *
+ * 產速與離線上限都由呼叫端算好傳進來（見 buildings.ts），因為兩者都會被
+ * 建築改變，而這個函式只負責「一段固定速率的時間換多少糧」。速率中途變了，
+ * 就分段呼叫——那是 game.ts settleTime 在做的事。
  */
-export function accrueGrain(ownedTiles: number, settledAt: number, now: number): Accrual {
-  if (ownedTiles <= 0) {
-    throw new RangeError(`ownedTiles must be positive, got ${ownedTiles}`);
-  }
+export function accrueGrain(
+  perHour: number,
+  settledAt: number,
+  now: number,
+  maxOfflineMs: number,
+): Accrual {
+  const step = msPerGrain(perHour);
   // 時鐘倒退（換裝置、校時）不該倒扣，也不該爆掉。
   const elapsed = Math.max(0, now - settledAt);
-  const capped = Math.min(elapsed, MAX_OFFLINE_MS);
+  const capped = Math.min(elapsed, maxOfflineMs);
 
-  const msPerGrain = HOUR_MS / (GRAIN_PER_TILE_PER_HOUR * ownedTiles);
-  const grain = Math.floor(capped / msPerGrain);
+  const grain = Math.floor(capped / step);
 
   // 超過上限時把時間戳直接推到現在，多出來的那段就是丟掉了——
   // 不然它會留在帳上，等於上限沒有作用。
-  const settled = elapsed > MAX_OFFLINE_MS ? now : settledAt + grain * msPerGrain;
+  const settled = elapsed > maxOfflineMs ? now : settledAt + grain * step;
 
   return {
     grain,
     settledAt: settled,
-    forfeitedMs: Math.max(0, elapsed - MAX_OFFLINE_MS),
+    forfeitedMs: Math.max(0, elapsed - maxOfflineMs),
   };
 }
 
-/** 產出一顆糧要多少毫秒。UI 用它顯示速率。 */
-export function msPerGrain(ownedTiles: number): number {
-  if (ownedTiles <= 0) {
-    throw new RangeError(`ownedTiles must be positive, got ${ownedTiles}`);
+/** 產出一顆糧要多少毫秒。UI 用它顯示速率，也是上面推進時間戳的單位。 */
+export function msPerGrain(perHour: number): number {
+  if (perHour <= 0) {
+    throw new RangeError(`grain per hour must be positive, got ${perHour}`);
   }
-  return HOUR_MS / (GRAIN_PER_TILE_PER_HOUR * ownedTiles);
+  return HOUR_MS / perHour;
 }

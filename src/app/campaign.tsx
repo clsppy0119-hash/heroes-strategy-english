@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { storedRecords, track } from "@/analytics";
 import { vocabProvider, type Question } from "@/content";
 import {
-  GRAIN_PER_TILE_PER_HOUR,
+  BUILDING_IDS,
   GRID_SIZE,
   MARCH_COST,
   RULES_VERSION,
@@ -19,10 +19,13 @@ import {
   defenderHpFor,
   dismissBattle,
   engageBattle,
+  grainPerHour,
+  isUnderConstruction,
   marchBlockedReason,
   marchDurationMs,
   marchHasArrived,
   marchProgress,
+  maxLevelOf,
   msPerGrain,
   orderMarch,
   previewDamage,
@@ -34,7 +37,12 @@ import {
   roundsFor,
   settleTime,
   startClock,
+  startUpgrade,
+  upgradeBlockedReason,
+  upgradeCost,
+  upgradeMs,
   vocabLevelForTile,
+  type BuildingId,
   type GameState,
   type LossReason,
   type March,
@@ -58,6 +66,30 @@ const TICK_MS = 1_000;
 
 function seconds(ms: number): number {
   return Math.ceil(ms / 1000);
+}
+
+/**
+ * 一段時間有多長。
+ *
+ * 兩分鐘以下寫秒：驛站第一級是 90 秒，四捨五入成「2 分」或「1 分」都不是實話。
+ */
+function durationLabel(ms: number): string {
+  return ms >= 120_000
+    ? t("build.minutes", { minutes: Math.round(ms / 60_000) })
+    : t("march.seconds", { seconds: seconds(ms) });
+}
+
+/** 還剩多久。跟 durationLabel 分開，因為「工期 還要 2 分」不是人話。 */
+function untilLabel(ms: number): string {
+  return t("build.until", { duration: durationLabel(ms) });
+}
+
+function buildingName(id: BuildingId): string {
+  return t(`build.${id}.name` as MessageKey);
+}
+
+function buildingEffect(id: BuildingId): string {
+  return t(`build.${id}.effect` as MessageKey);
 }
 
 /** 地形的顯示名稱走 i18n；core 裡只有識別碼。 */
@@ -95,6 +127,30 @@ export function Campaign() {
     return () => clearInterval(timer);
   }, []);
 
+  /**
+   * 完工是補算時間時算出來的，沒有一個「玩家按下去」的時刻可以埋點，
+   * 所以改成盯著等級變化。這樣埋到的時間戳是玩家看到完工的那一刻——
+   * 那正是 v0.2 想知道的（蓋了東西的人，隔多久回來看）。
+   */
+  const levels = BUILDING_IDS.map((id) => game.buildings[id].level).join(",");
+  const seenLevels = useRef<string>("");
+  useEffect(() => {
+    if (seenLevels.current === "") {
+      seenLevels.current = levels;
+      return;
+    }
+    if (seenLevels.current === levels) {
+      return;
+    }
+    const before = seenLevels.current.split(",").map(Number);
+    levels.split(",").forEach((value, index) => {
+      if (Number(value) > before[index]) {
+        track({ type: "building_completed", building: BUILDING_IDS[index], level: Number(value) });
+      }
+    });
+    seenLevels.current = levels;
+  }, [levels]);
+
   const battle = game.battle;
   const selected = game.tiles.find((tile) => tile.id === selectedId) ?? null;
 
@@ -105,9 +161,25 @@ export function Campaign() {
         type: "march_ordered",
         tileId: tile.id,
         tileLevel: tile.level,
-        durationMs: marchDurationMs(tile.x, tile.y),
+        durationMs: marchDurationMs(tile.x, tile.y, game.buildings.relay.level),
       });
       setGame(orderMarch(game, tile.id, Date.now()));
+    },
+    [game],
+  );
+
+  const build = useCallback(
+    (id: BuildingId) => {
+      const at = Date.now();
+      track({
+        type: "building_started",
+        building: id,
+        toLevel: game.buildings[id].level + 1,
+        cost: upgradeCost(id, game.buildings[id].level),
+        buildMs: upgradeMs(id, game.buildings[id].level),
+      });
+      // 先補算再動工，否則這次升級的產速會回頭套到過去的時間。
+      setGame(startUpgrade(settleTime(game, at), id, at));
     },
     [game],
   );
@@ -274,7 +346,7 @@ export function Campaign() {
     <div className="flex w-full flex-col gap-8">
       <Header
         grain={game.grain}
-        grainRate={GRAIN_PER_TILE_PER_HOUR * ownedCount(game)}
+        grainRate={Math.round(grainPerHour(ownedCount(game), game.buildings.farm.level))}
         captured={capturedCount(game)}
         onExport={exportRecords}
       />
@@ -305,6 +377,9 @@ export function Campaign() {
         />
       )}
 
+      {/* 主城在打仗的時候不該分心，所以戰鬥畫面不顯示。 */}
+      {battle === null && <CityPanel game={game} now={now} onBuild={build} />}
+
       {game.status === "cleared" ? (
         <section className="flex flex-col gap-3 border-t-2 border-vermilion bg-paper-raised p-5">
           <p className="font-display text-lg">{t("campaign.status.cleared")}</p>
@@ -315,6 +390,94 @@ export function Campaign() {
       ) : game.status === "stuck" ? (
         <WaitingForGrain game={game} onRestart={restart} />
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * 主城。
+ *
+ * 這裡是 v0.2 唯一一個「你不在的時候世界還在動」的具體證據——沙盤上的地
+ * 不會自己變，糧草的數字動得太慢看不出來，只有蓋到一半的工程回來時會不一樣。
+ */
+function CityPanel({
+  game,
+  now,
+  onBuild,
+}: {
+  game: GameState;
+  now: number;
+  onBuild: (id: BuildingId) => void;
+}) {
+  return (
+    <section className="flex flex-col gap-3">
+      <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-soft">
+        {t("build.heading")}
+      </p>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {BUILDING_IDS.map((id) => (
+          <BuildingCard key={id} id={id} game={game} now={now} onBuild={onBuild} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function BuildingCard({
+  id,
+  game,
+  now,
+  onBuild,
+}: {
+  id: BuildingId;
+  game: GameState;
+  now: number;
+  onBuild: (id: BuildingId) => void;
+}) {
+  const building = game.buildings[id];
+  const max = maxLevelOf(id);
+  const building_ = isUnderConstruction(game, id, now);
+  const blocked = upgradeBlockedReason(game, id, now);
+
+  return (
+    <div className="flex flex-col gap-2 border border-rule bg-paper-raised p-4">
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="font-display text-lg font-bold">{buildingName(id)}</h3>
+        <span className="font-mono text-[11px] tabular-nums text-ink-soft">
+          {t("build.level", { level: building.level, max })}
+        </span>
+      </div>
+      <p className="text-xs text-ink-soft">{buildingEffect(id)}</p>
+
+      {building_ ? (
+        <p className="font-mono text-xs tabular-nums text-bronze">
+          {t("build.underway", { until: untilLabel(building.completesAt! - now) })}
+        </p>
+      ) : blocked === "max-level" ? (
+        <p className="font-mono text-xs text-ink-soft">{t("build.maxed")}</p>
+      ) : (
+        <>
+          {/* 代價寫在按之前：花多少糧、要蓋多久。 */}
+          <p className="font-mono text-xs tabular-nums text-ink-soft">
+            {t("build.cost", {
+              grain: upgradeCost(id, building.level),
+              duration: durationLabel(upgradeMs(id, building.level)),
+            })}
+          </p>
+          <button
+            type="button"
+            disabled={blocked !== null}
+            onClick={() => onBuild(id)}
+            className="self-start bg-bronze px-4 py-1.5 font-display text-sm font-bold text-paper disabled:cursor-not-allowed disabled:bg-transparent disabled:text-ink-soft disabled:opacity-60"
+          >
+            {blocked === "busy"
+              ? t("build.blocked.busy")
+              : blocked === "not-enough-grain"
+                ? t("build.blocked.notEnoughGrain")
+                : t("build.start")}
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -591,7 +754,9 @@ function TileDetail({
             {t("march.label")}
           </dt>
           <dd className="font-mono text-lg tabular-nums text-ink-soft">
-            {t("march.seconds", { seconds: seconds(marchDurationMs(tile.x, tile.y)) })}
+            {t("march.seconds", {
+              seconds: seconds(marchDurationMs(tile.x, tile.y, game.buildings.relay.level)),
+            })}
           </dd>
         </div>
       </dl>
