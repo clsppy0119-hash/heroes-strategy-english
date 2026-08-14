@@ -43,6 +43,8 @@
   "march.arrived": "軍隊已就位，等你下令",
   "march.engage": "接敵",
   "march.recall": "鳴金",
+  "march.mark": "兵",
+  "march.column": "隊伍在此",
 
   "build.heading": "城池營建",
   "build.level": "{level} / {max} 級",

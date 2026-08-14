@@ -86,6 +86,8 @@ export {
   findTile,
   isAdjacent,
   levelForDistance,
+  marchHeadIndex,
+  marchPath,
   marchableTiles,
   tileId,
   type Terrain,

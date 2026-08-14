@@ -24,6 +24,8 @@ import {
   marchBlockedReason,
   marchDurationMs,
   marchHasArrived,
+  marchHeadIndex,
+  marchPath,
   marchProgress,
   maxLevelOf,
   msPerGrain,
@@ -572,9 +574,22 @@ function BuildingCard({
       <p className="text-xs text-ink-soft">{buildingEffect(id)}</p>
 
       {building_ ? (
-        <p className="font-mono text-xs tabular-nums text-bronze">
-          {t("build.underway", { until: untilLabel(building.completesAt! - now) })}
-        </p>
+        /* 純文字倒數看起來像壞掉的時鐘。長條會動，工程才像在進行。 */
+        <div className="flex flex-col gap-1.5">
+          <div className="h-1 w-full bg-paper-sunk">
+            <div
+              className="h-full bg-bronze transition-[width] duration-1000 ease-linear"
+              style={{
+                width: `${
+                  (1 - (building.completesAt! - now) / upgradeMs(id, building.level)) * 100
+                }%`,
+              }}
+            />
+          </div>
+          <p className="font-mono text-xs tabular-nums text-bronze">
+            {t("build.underway", { until: untilLabel(building.completesAt! - now) })}
+          </p>
+        </div>
       ) : blocked === "max-level" ? (
         <p className="font-mono text-xs text-ink-soft">{t("build.maxed")}</p>
       ) : (
@@ -736,6 +751,15 @@ function Sandtable({
   const march = game.march;
   const marchTile = march === null ? null : (game.tiles.find((tile) => tile.id === march.tileId) ?? null);
 
+  /**
+   * 行軍路線。隊伍從主城一格一格走過去，走過的格子留下印子。
+   *
+   * 這不只是裝飾：行軍時間是用「離主城幾步」算的，讓軍隊真的走那麼多格，
+   * 那個數字才變得看得懂——遠的地方久，是因為路真的長。
+   */
+  const path = marchTile === null ? [] : marchPath(marchTile.x, marchTile.y);
+  const head = march === null ? -1 : marchHeadIndex(path, marchProgress(march, now));
+
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
       <div className="flex flex-col gap-2">
@@ -743,16 +767,21 @@ function Sandtable({
           {t("campaign.mapLabel")}
         </p>
         <div className="sandtable grid w-full max-w-lg grid-cols-6 gap-1 border-2 border-rule-strong bg-paper-sunk p-1.5 lg:w-[30rem]">
-          {game.tiles.map((tile) => (
-            <TileButton
-              key={tile.id}
-              tile={tile}
-              marchable={marchBlockedReason(game, tile.id) === null}
-              selected={selected?.id === tile.id}
-              targeted={march?.tileId === tile.id}
-              onSelect={onSelect}
-            />
-          ))}
+          {game.tiles.map((tile) => {
+            const step = path.indexOf(tile.id);
+            return (
+              <TileButton
+                key={tile.id}
+                tile={tile}
+                marchable={marchBlockedReason(game, tile.id) === null}
+                selected={selected?.id === tile.id}
+                targeted={march?.tileId === tile.id}
+                onRoute={step > 0 && step < head}
+                marching={step > 0 && step === head && march?.tileId !== tile.id}
+                onSelect={onSelect}
+              />
+            );
+          })}
         </div>
       </div>
 
@@ -913,6 +942,8 @@ function TileButton({
   marchable,
   selected,
   targeted,
+  onRoute,
+  marching,
   onSelect,
 }: {
   tile: Tile;
@@ -920,6 +951,10 @@ function TileButton({
   selected: boolean;
   /** 軍隊正在往這裡去。 */
   targeted: boolean;
+  /** 隊伍已經走過這一格。 */
+  onRoute: boolean;
+  /** 隊伍此刻就在這一格。 */
+  marching: boolean;
   onSelect: (tile: Tile) => void;
 }) {
   const owned = tile.owned;
@@ -931,7 +966,7 @@ function TileButton({
       aria-pressed={selected}
       aria-label={`${terrainName(tile.terrain)} ${t("tile.level", { level: tile.level })}${
         owned ? ` ${t("tile.owned")}` : ""
-      }${targeted ? ` ${t("march.heading")}` : ""}`}
+      }${targeted ? ` ${t("march.heading")}` : ""}${marching ? ` ${t("march.column")}` : ""}`}
       style={{ color: owned ? undefined : `var(--terrain-${tile.terrain})` }}
       className={`relative flex aspect-square flex-col items-center justify-center gap-0.5 border transition-colors ${
         owned
@@ -939,9 +974,9 @@ function TileButton({
           : marchable
             ? "border-rule-strong bg-paper hover:bg-paper-raised"
             : "border-rule bg-paper-sunk opacity-45"
-      } ${targeted ? "animate-target border-bronze bg-paper opacity-100" : ""} ${
-        selected ? "outline outline-2 outline-offset-2 outline-vermilion" : ""
-      }`}
+      } ${onRoute || marching ? "route opacity-100" : ""} ${
+        targeted ? "animate-target border-bronze bg-paper opacity-100" : ""
+      } ${selected ? "outline outline-2 outline-offset-2 outline-vermilion" : ""}`}
     >
       <span className={`font-display text-xl font-bold leading-none ${owned ? "animate-banner" : ""}`}>
         {terrainMark(tile.terrain)}
@@ -949,6 +984,17 @@ function TileButton({
       {tile.level > 0 && (
         <span className="font-mono text-[9px] leading-none tabular-nums opacity-70">
           {t("tile.level", { level: tile.level })}
+        </span>
+      )}
+
+      {/* 隊伍本體。走到哪一格就出現在哪一格，蓋在地形上面。 */}
+      {marching && (
+        <span
+          key={tile.id}
+          aria-hidden
+          className="animate-column absolute inset-0 flex items-center justify-center bg-bronze font-display text-xl font-bold text-paper"
+        >
+          {t("march.mark")}
         </span>
       )}
     </button>
