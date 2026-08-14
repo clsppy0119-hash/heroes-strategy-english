@@ -3,6 +3,7 @@ import { assertBankUsable, createStaticProvider } from './static-provider';
 
 export * from './provider';
 export * from './static-provider';
+export * from './listening';
 export * from './review';
 export * from './select';
 export * from './srs';
