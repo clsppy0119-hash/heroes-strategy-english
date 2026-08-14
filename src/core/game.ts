@@ -19,7 +19,7 @@ import {
   type RoundQuestion,
 } from './battle';
 import { canMarchTo, createMap, findTile, type Tile, type TileId } from './map';
-import { hasArrived, startMarch, type March } from './march';
+import { hasArrived, startMarch, startReturn, type March } from './march';
 import { RULES_VERSION, type RulesVersion } from './rules';
 import { seedFrom, type RngState } from './rng';
 
@@ -137,11 +137,17 @@ export function settleTime(state: GameState, now: number): GameState {
   }
   current = accrueInto(current, now, capMs);
 
-  if (current === state) {
+  // 班師到家。這是純粹由時間決定的轉變，所以歸補算管——玩家不在的時候
+  // 隊伍一樣會走到家，回來就能直接再出兵。
+  const home =
+    current.march !== null && current.march.heading === 'home' && hasArrived(current.march, now);
+
+  if (current === state && !home) {
     return state;
   }
   return {
     ...current,
+    march: home ? null : current.march,
     // 補算完可能就有糧再出兵了，卡住的狀態要跟著解除。
     status: current.status === 'stuck' && current.grain >= MARCH_COST ? 'playing' : current.status,
   };
@@ -239,7 +245,7 @@ export function marchBlockedReason(state: GameState, id: TileId): MarchBlockedRe
   if (state.battle !== null && state.battle.outcome === 'ongoing') {
     return 'in-battle';
   }
-  // 一次只有一支軍隊在外。抵達之後也還算在外，直到玩家接敵或鳴金。
+  // 一次只有一支軍隊在外，回程也算在外——人還沒到家就不能再派出去。
   if (state.march !== null) {
     return 'marching';
   }
@@ -290,9 +296,13 @@ export function orderMarch(state: GameState, id: TileId, now: number): GameState
  *
  * 全額退是刻意的：點錯一塊地就損失一次出兵的成本，只會讓玩家不敢點。
  * 真正的成本是已經花掉的那段時間，那退不回來。
+ *
+ * 撤回不用走回程。這不是一次出兵，是一個被取消的命令——讓誤點還要罰
+ * 一段回程時間，等於逼玩家在點之前先確認一次，那不是這個按鈕的用意。
+ * 班師的時間留給真正打過的那一趟。
  */
 export function recallMarch(state: GameState): GameState {
-  if (state.march === null) {
+  if (state.march === null || state.march.heading !== 'out') {
     return state;
   }
   return { ...state, grain: state.grain + MARCH_COST, march: null };
@@ -300,6 +310,11 @@ export function recallMarch(state: GameState): GameState {
 
 export function marchHasArrived(state: GameState, now: number): boolean {
   return state.march !== null && hasArrived(state.march, now);
+}
+
+/** 軍隊已經走到目標，等著開打。 */
+export function readyToEngage(state: GameState, now: number): boolean {
+  return state.march !== null && state.march.heading === 'out' && hasArrived(state.march, now);
 }
 
 /**
@@ -311,6 +326,9 @@ export function marchHasArrived(state: GameState, now: number): boolean {
 export function engageBattle(state: GameState, questions: readonly RoundQuestion[], now: number): GameState {
   if (state.march === null) {
     throw new Error('no march to engage');
+  }
+  if (state.march.heading !== 'out') {
+    throw new Error('the column is heading home, not to a battle');
   }
   if (!hasArrived(state.march, now)) {
     throw new Error(`march to ${state.march.tileId} has not arrived`);
@@ -334,7 +352,13 @@ export function engageBattle(state: GameState, questions: readonly RoundQuestion
   };
 }
 
-function settle(state: GameState, battle: BattleState): GameState {
+/**
+ * 打完了。佔領、繳獲、然後班師。
+ *
+ * 回程是狀態的一部分而不是動畫：軍隊在路上就不能再出兵，而那段時間
+ * 要能撐過關掉分頁。所以它跟去程一樣存在 march 裡，只是方向相反。
+ */
+function settle(state: GameState, battle: BattleState, now: number): GameState {
   const tiles =
     battle.outcome === 'won'
       ? state.tiles.map((tile) => (tile.id === battle.tileId ? { ...tile, owned: true } : tile))
@@ -345,32 +369,37 @@ function settle(state: GameState, battle: BattleState): GameState {
 
   const allTaken = tiles.every((tile) => tile.owned);
   const canAffordAnother = grain >= MARCH_COST;
+  const from = findTile(state.tiles, battle.tileId);
 
   return {
     ...state,
     tiles,
     grain,
     battle,
+    march:
+      from === undefined
+        ? null
+        : startReturn(from.id, from.x, from.y, state.buildings.relay.level, now),
     battlesWon: state.battlesWon + (battle.outcome === 'won' ? 1 : 0),
     status: allTaken ? 'cleared' : canAffordAnother ? 'playing' : 'stuck',
   };
 }
 
-/** 結算一回合。戰鬥在這一回合結束的話，佔領與產糧一併算完。 */
-export function answerRound(state: GameState, choiceIndex: number | null): GameState {
+/** 結算一回合。戰鬥在這一回合結束的話，佔領、繳獲、班師一併算完。 */
+export function answerRound(state: GameState, choiceIndex: number | null, now: number): GameState {
   if (state.battle === null || state.battle.outcome !== 'ongoing') {
     return state;
   }
   const battle = resolveBattleRound(state.battle, choiceIndex);
-  return battle.outcome === 'ongoing' ? { ...state, battle } : settle(state, battle);
+  return battle.outcome === 'ongoing' ? { ...state, battle } : settle(state, battle, now);
 }
 
-/** 中途離開。算成敗仗，糧草不退。 */
-export function retreat(state: GameState): GameState {
+/** 中途離開。算成敗仗，糧草不退，一樣要走回來。 */
+export function retreat(state: GameState, now: number): GameState {
   if (state.battle === null || state.battle.outcome !== 'ongoing') {
     return state;
   }
-  return settle(state, abandonBattle(state.battle));
+  return settle(state, abandonBattle(state.battle), now);
 }
 
 /** 關掉戰報，回到地圖。 */

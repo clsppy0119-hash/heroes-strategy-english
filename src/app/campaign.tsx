@@ -33,6 +33,7 @@ import {
   previewDamage,
   previewMultiplier,
   ownedCount,
+  readyToEngage,
   recallMarch,
   remainingMs,
   resumeGame,
@@ -292,11 +293,13 @@ export function Campaign() {
 
   /**
    * 接敵。抽題要用 battleSeed(state, id)，所以順序是先算種子、抽題、再進 core。
-   * 抵達之後不自動開打——停在「等你接敵」才是離開再回來的理由。
+   *
+   * 抵達就直接開打（lionw 指定）。原本停在「等你接敵」多一個按鈕，
+   * 但那個按鈕沒有選擇可言——走到了就是要打，多一下點擊只是延遲。
    */
   const engage = useCallback(() => {
     const march = game.march;
-    if (march === null) {
+    if (march === null || march.heading !== "out") {
       return;
     }
     const tile = game.tiles.find((each) => each.id === march.tileId);
@@ -336,6 +339,32 @@ export function Campaign() {
     setGame(next);
   }, [game]);
 
+  // engage 每次 render 都是新的（它讀 game），但排程只該跟著抵達時間跑一次。
+  const latestEngage = useRef(engage);
+  useEffect(() => {
+    latestEngage.current = engage;
+  });
+
+  /**
+   * 走到了就開打。
+   *
+   * 用一個算準抵達時刻的計時器，而不是每次 render 去問「到了沒」。
+   * 抵達是一件排定好的外部事件，effect 對它訂閱一次就夠——盯著自己的
+   * state 反覆檢查會變成連鎖 render，那也正是 react-hooks 在擋的東西。
+   *
+   * 離線回來、行軍早就抵達的情況走同一條路：剩餘時間是負的，夾成 0，
+   * 計時器立刻就燒。那正是「回來時有東西在等你」。
+   */
+  const engageAt = game.march?.heading === "out" ? game.march.arrivesAt : null;
+  const inBattle = battle !== null;
+  useEffect(() => {
+    if (!loaded || inBattle || engageAt === null) {
+      return;
+    }
+    const timer = setTimeout(() => latestEngage.current(), Math.max(0, engageAt - Date.now()));
+    return () => clearTimeout(timer);
+  }, [loaded, inBattle, engageAt]);
+
   const submit = useCallback(
     (choiceIndex: number | null) => {
       if (battle === null || battle.outcome !== "ongoing") {
@@ -343,7 +372,7 @@ export function Campaign() {
       }
       const question = questions[battle.round];
       const elapsedMs = Date.now() - shownAt.current;
-      const next = answerRound(game, choiceIndex);
+      const next = answerRound(game, choiceIndex, Date.now());
       const resolved = next.battle!.log[next.battle!.log.length - 1];
 
       if (choiceIndex === null) {
@@ -404,7 +433,7 @@ export function Campaign() {
     if (battle === null || battle.outcome !== "ongoing") {
       return;
     }
-    const next = retreat(game);
+    const next = retreat(game, Date.now());
     track({
       type: "battle_end",
       battleId: battle.battleId,
@@ -473,7 +502,6 @@ export function Campaign() {
           now={now}
           onSelect={(tile) => setSelectedId(tile.id)}
           onMarch={order}
-          onEngage={engage}
           onRecall={recall}
         />
       )}
@@ -739,7 +767,6 @@ function Sandtable({
   now,
   onSelect,
   onMarch,
-  onEngage,
   onRecall,
 }: {
   game: GameState;
@@ -747,7 +774,6 @@ function Sandtable({
   now: number;
   onSelect: (tile: Tile) => void;
   onMarch: (tile: Tile) => void;
-  onEngage: () => void;
   onRecall: () => void;
 }) {
   const march = game.march;
@@ -758,18 +784,15 @@ function Sandtable({
    *
    * 這不只是裝飾：行軍時間是用「離主城幾步」算的，讓軍隊真的走那麼多格，
    * 那個數字才變得看得懂——遠的地方久，是因為路真的長。
+   *
+   * 班師走同一條路，只是反過來。用同一條而不是另外算一條，玩家才看得出
+   * 那是同一支隊伍在原路折返。
    */
-  const path = marchTile === null ? [] : marchPath(marchTile.x, marchTile.y);
+  const outbound = marchTile === null ? [] : marchPath(marchTile.x, marchTile.y);
+  const path = march?.heading === "home" ? [...outbound].reverse() : outbound;
   const head = march === null ? -1 : marchHeadIndex(path, marchProgress(march, now));
   const grid = useRef<HTMLDivElement>(null);
   const centers = useTileCenters(grid);
-  /**
-   * 抵達之後隊伍就不畫了，換成目標格脈動的「已就位」。
-   *
-   * 這個判斷不能省成「頭還沒到最後一格」：主城旁邊的地距離是 1，路線只有
-   * 主城跟目標兩格，隊伍一出發就已經在最後一格上。那是新玩家第一件會做的事，
-   * 也是最不能沒有動靜的一次。
-   */
   const arrived = march !== null && now >= march.arrivesAt;
 
   return (
@@ -792,7 +815,7 @@ function Sandtable({
                 marchable={marchBlockedReason(game, tile.id) === null}
                 selected={selected?.id === tile.id}
                 onRoute={step > 0 && step <= head}
-                targeted={march?.tileId === tile.id && !arrived}
+                targeted={march?.heading === "out" && march.tileId === tile.id && !arrived}
                 onSelect={onSelect}
               />
             );
@@ -806,7 +829,7 @@ function Sandtable({
 
       <aside className="flex flex-1 flex-col gap-4 border border-rule bg-paper-raised p-5">
         {march !== null ? (
-          <MarchPanel march={march} tile={marchTile} now={now} onEngage={onEngage} onRecall={onRecall} />
+          <MarchPanel march={march} tile={marchTile} now={now} onRecall={onRecall} />
         ) : (
           <TileDetail game={game} tile={selected} onMarch={onMarch} />
         )}
@@ -818,22 +841,24 @@ function Sandtable({
 /**
  * 軍隊在路上。
  *
- * 抵達之後停在這裡等玩家按接敵，不自動開打——那一刻才是「離開再回來，
- * 有東西在等你」最小的一個版本，而 v0.2 要驗的就是這件事。
+ * 去程走到就直接開打，所以「已抵達」這個狀態在畫面上幾乎看不到——
+ * 它只在最後那一格與戰鬥開場之間存在一瞬間。
+ *
+ * 回程沒有任何按鈕：班師途中玩家什麼都不用決定，給他一個能按的東西
+ * 只會讓他以為漏了什麼。
  */
 function MarchPanel({
   march,
   tile,
   now,
-  onEngage,
   onRecall,
 }: {
   march: March;
   tile: Tile | null;
   now: number;
-  onEngage: () => void;
   onRecall: () => void;
 }) {
+  const home = march.heading === "home";
   const arrived = now >= march.arrivesAt;
   const progress = marchProgress(march, now);
 
@@ -841,7 +866,7 @@ function MarchPanel({
     <>
       <div className="flex flex-col gap-0.5">
         <h2 className="font-display text-2xl font-bold whitespace-nowrap">
-          {arrived ? t("march.arrivedHeading") : t("march.heading")}
+          {home ? t("march.homeHeading") : arrived ? t("march.arrivedHeading") : t("march.heading")}
         </h2>
         {tile !== null && (
           <span className="font-mono text-xs text-ink-soft">
@@ -859,25 +884,18 @@ function MarchPanel({
         </div>
         <p className="font-mono text-xs tabular-nums text-ink-soft">
           {arrived
-            ? t("march.arrived")
-            : t("march.remaining", { seconds: seconds(remainingMs(march, now)) })}
+            ? t(home ? "march.home" : "march.arrived")
+            : t(home ? "march.homeRemaining" : "march.remaining", {
+                seconds: seconds(remainingMs(march, now)),
+              })}
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4">
-        {arrived && (
-          <button
-            type="button"
-            onClick={onEngage}
-            className="bg-vermilion px-6 py-2.5 font-display text-base font-bold text-paper"
-          >
-            {t("march.engage")}
-          </button>
-        )}
-        <button type="button" onClick={onRecall} className="text-sm text-ink-soft underline underline-offset-4">
+      {!home && (
+        <button type="button" onClick={onRecall} className="self-start text-sm text-ink-soft underline underline-offset-4">
           {t("march.recall")}
         </button>
-      </div>
+      )}
     </>
   );
 }

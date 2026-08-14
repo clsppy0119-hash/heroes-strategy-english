@@ -29,8 +29,13 @@ import { RULES_VERSION, type RulesVersion } from './rules';
  * 壞掉的也只是「哪幾塊是我的」，不會是「遊戲跑不動」。
  */
 
-/** 存檔外殼的形狀版本。改變 SaveEnvelope 的結構時遞增。 */
-export const SAVE_VERSION = 1;
+/**
+ * 存檔外殼的形狀版本。改變 SaveEnvelope 的結構時遞增。
+ *
+ * 2：行軍加了 heading（出征／班師）。舊存檔沒有這個欄位，讀進來會是一支
+ * 方向不明的軍隊——與其猜，不如明確作廢。
+ */
+export const SAVE_VERSION = 2;
 
 export interface SaveEnvelope {
   readonly saveVersion: number;
@@ -131,16 +136,23 @@ function readMarch(value: unknown, tiles: readonly Tile[]): March | null | 'inva
   if (!isRecord(value)) {
     return 'invalid';
   }
-  const { tileId, departedAt, arrivesAt } = value;
+  const { tileId, departedAt, arrivesAt, heading } = value;
   if (typeof tileId !== 'string' || !nonNegative(departedAt) || !nonNegative(arrivesAt)) {
     return 'invalid';
   }
-  const target = tiles.find((tile) => tile.id === tileId);
-  // 打的地不存在或已經是自己的，那支軍隊沒有意義。
-  if (target === undefined || target.owned || arrivesAt < departedAt) {
+  if (heading !== 'out' && heading !== 'home') {
     return 'invalid';
   }
-  return { tileId, departedAt, arrivesAt };
+  const target = tiles.find((tile) => tile.id === tileId);
+  if (target === undefined || arrivesAt < departedAt) {
+    return 'invalid';
+  }
+  // 去程打的地不能已經是自己的；回程正好相反——剛打贏的那塊地本來就是自己的了，
+  // 所以回程不看擁有狀態。
+  if (heading === 'out' && target.owned) {
+    return 'invalid';
+  }
+  return { tileId, departedAt, arrivesAt, heading };
 }
 
 /**

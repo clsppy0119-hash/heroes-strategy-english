@@ -26,16 +26,39 @@ import { distanceFromCity, type TileId } from './map';
  * （等級也是距離算出來的），但講的是不同的事——一個是仗難打，一個是路難走。
  */
 
+/**
+ * 出征還是班師。
+ *
+ * 兩者共用同一個結構，因為對畫面來說它們是同一件事：一列人在沙盤上走。
+ * 差別只有走的方向與長度，那用一個欄位就講完了。
+ */
+export type Heading = 'out' | 'home';
+
 export interface March {
+  /** 去程是目標，回程是從哪裡撤回來的。兩者都是同一塊地。 */
   readonly tileId: TileId;
   readonly departedAt: number;
   readonly arrivesAt: number;
+  readonly heading: Heading;
 }
+
+/**
+ * 班師只要去程的一半時間。
+ *
+ * 打完就走，不必再邊走邊探路——這是遊戲上的說法。真正的理由是：
+ * 回程對玩家來說是純粹的等待，沒有任何期待在裡面（去程盡頭有一場仗），
+ * 所以它該比去程短。一半是 lionw 定的。
+ */
+export const RETURN_RATIO = 0.5;
 
 /** 走一趟要多久。core 不能自己取時間，所以這裡只回傳長度。 */
 export function marchDurationMs(tileX: number, tileY: number, relayLevel: number): number {
   const base = MARCH_BASE_MS + MARCH_MS_PER_STEP * distanceFromCity(tileX, tileY);
   return Math.round(base * marchSpeedFactor(relayLevel));
+}
+
+export function returnDurationMs(tileX: number, tileY: number, relayLevel: number): number {
+  return Math.round(marchDurationMs(tileX, tileY, relayLevel) * RETURN_RATIO);
 }
 
 export function startMarch(
@@ -49,6 +72,23 @@ export function startMarch(
     tileId,
     departedAt: now,
     arrivesAt: now + marchDurationMs(tileX, tileY, relayLevel),
+    heading: 'out',
+  };
+}
+
+/** 打完之後從那塊地走回主城。 */
+export function startReturn(
+  tileId: TileId,
+  tileX: number,
+  tileY: number,
+  relayLevel: number,
+  now: number,
+): March {
+  return {
+    tileId,
+    departedAt: now,
+    arrivesAt: now + returnDurationMs(tileX, tileY, relayLevel),
+    heading: 'home',
   };
 }
 
