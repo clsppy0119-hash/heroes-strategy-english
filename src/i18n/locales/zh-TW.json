@@ -79,6 +79,10 @@
   "battle.retreat": "鳴金收兵",
 
   "battle.intel": "斥候回報",
+  "battle.listen.mark": "♪",
+  "battle.listen.replay": "再聽一次",
+  "battle.listen.reveal": "看拼字",
+  "battle.listen.hint": "斥候只帶回了口信",
   "battle.skip": "不判讀，直接進攻",
 
   "battle.preview.correct": "判讀正確 → 暴擊 ×{multiplier}，約 {damage}",

@@ -1,5 +1,6 @@
 import { MAX_ROUNDS, nextInt, shuffle, type RngState } from '@/core';
 
+import { modeFor } from './listening';
 import type { ContentProvider, Question, QuestionRequest } from './provider';
 import { orderCandidates } from './select';
 
@@ -54,6 +55,9 @@ export function createStaticProvider(bank: readonly VocabEntry[]): ContentProvid
           choices,
           answerIndex: choices.indexOf(entry.zh),
           sourceId: entry.source,
+          // 第一次看字，之後聽音。沒有複習簿時一律看字——
+          // 讀不到學習狀態就不知道玩家看過沒有，那時出聽力題只是刁難。
+          mode: modeFor(request.review?.book[entry.id]),
         });
       }
 

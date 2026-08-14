@@ -6,6 +6,7 @@ import { storedRecords, track } from "@/analytics";
 import {
   EMPTY_REVIEW_BOOK,
   recordAttempt,
+  resolveMode,
   vocabProvider,
   type Question,
   type ReviewBook,
@@ -39,7 +40,6 @@ import {
   previewDamage,
   previewMultiplier,
   ownedCount,
-  readyToEngage,
   recallMarch,
   remainingMs,
   resumeGame,
@@ -63,6 +63,7 @@ import { t, type MessageKey } from "@/i18n";
 import { LOCAL_PLAYER_ID, gameRepository, reviewRepository } from "@/persistence";
 
 import { MarchColumn, useTileCenters } from "./march-column";
+import { canSpeak, speak } from "./speech";
 
 /** 回來時桌上多出來的東西。零的話不打擾玩家。 */
 interface Welcome {
@@ -358,7 +359,13 @@ export function Campaign() {
       rulesVersion: RULES_VERSION,
       waitedMs: at - march.departedAt,
     });
-    track({ type: "question_shown", battleId: next.battle!.battleId, round: 0, questionId: drawn[0].id });
+    track({
+      type: "question_shown",
+      battleId: next.battle!.battleId,
+      round: 0,
+      questionId: drawn[0].id,
+      mode: drawn[0].mode,
+    });
 
     shownAt.current = at;
     setQuestions(drawn);
@@ -432,6 +439,7 @@ export function Campaign() {
           correct: resolved.correct,
           elapsedMs,
           streak: resolved.streakAfter,
+          mode: question.mode,
         });
       }
 
@@ -442,6 +450,7 @@ export function Campaign() {
           battleId: finished.battleId,
           round: finished.round,
           questionId: questions[finished.round].id,
+          mode: questions[finished.round].mode,
         });
         shownAt.current = Date.now();
       } else {
@@ -1105,6 +1114,71 @@ function ForceBar({
   );
 }
 
+/**
+ * 題目本體：看字，還是聽音。
+ *
+ * ## 為什麼一定要有「看拼字」
+ *
+ * 三個理由，任何一個都足夠：
+ *  - 自動播放在部分瀏覽器需要先有互動，第一次可能沒聲音
+ *  - 聽不見的玩家在純語音題面前只能亂猜
+ *  - 玩家聽了三次還是抓不到，硬卡著只會讓他關掉分頁
+ *
+ * 按了不扣分也不記錄——它是自己選的難度，不是遊戲的懲罰。
+ */
+function Prompt({ question }: { question: Question }) {
+  const speech = canSpeak();
+  const mode = resolveMode(question.mode, speech);
+  const [revealed, setRevealed] = useState(false);
+
+  /*
+    題目出現就唸一次。呼叫端給了 key={question.id}，換題等於整個重新掛載，
+    所以「把拼字收回去」不用在這裡重設 state——那會變成 effect 裡呼叫
+    setState 的連鎖 render，用 key 重置是 React 給的正解。
+  */
+  useEffect(() => {
+    if (mode === "listen") {
+      speak(question.prompt);
+    }
+  }, [question.prompt, mode]);
+
+  if (mode === "read") {
+    return (
+      <p className="font-display text-4xl font-bold tracking-tight sm:text-5xl">{question.prompt}</p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-4">
+        <button
+          type="button"
+          onClick={() => speak(question.prompt)}
+          className="flex items-center gap-3 border-2 border-vermilion bg-paper px-5 py-3 font-display text-xl font-bold text-vermilion transition-colors hover:bg-vermilion hover:text-paper"
+        >
+          <span aria-hidden className="text-2xl leading-none">
+            {t("battle.listen.mark")}
+          </span>
+          {t("battle.listen.replay")}
+        </button>
+
+        {revealed ? (
+          <span className="font-display text-3xl font-bold tracking-tight">{question.prompt}</span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setRevealed(true)}
+            className="text-sm text-ink-soft underline underline-offset-4"
+          >
+            {t("battle.listen.reveal")}
+          </button>
+        )}
+      </div>
+      <p className="font-mono text-[11px] tracking-[0.1em] text-ink-soft">{t("battle.listen.hint")}</p>
+    </div>
+  );
+}
+
 function BattlePanel({
   battle,
   tile,
@@ -1170,7 +1244,7 @@ function BattlePanel({
         <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-vermilion">
           {t("battle.intel")}
         </p>
-        <p className="font-display text-4xl font-bold tracking-tight sm:text-5xl">{question.prompt}</p>
+        <Prompt key={question.id} question={question} />
 
         <div className="grid gap-2 sm:grid-cols-2">
           {question.choices.map((choice, index) => (

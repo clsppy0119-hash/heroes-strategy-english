@@ -34,16 +34,17 @@ const rec = (event: AnalyticsEvent, sessionId = 's1'): AnalyticsRecord => ({
   event,
 });
 
-const shown = (round: number) =>
-  rec({ type: 'question_shown', battleId: 'b1', round, questionId: `q${round}` });
+const shown = (round: number, mode = 'read') =>
+  rec({ type: 'question_shown', battleId: 'b1', round, questionId: `q${round}`, mode });
 
-const answered = (round: number, correct: boolean, elapsedMs: number) =>
+const answered = (round: number, correct: boolean, elapsedMs: number, mode = 'read') =>
   rec({
     type: 'question_answered',
     battleId: 'b1',
     round,
     questionId: `q${round}`,
     correct,
+    mode,
     elapsedMs,
     streak: correct ? 1 : 0,
   });

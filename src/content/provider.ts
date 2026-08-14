@@ -1,5 +1,6 @@
 import type { RngState } from '@/core';
 
+import type { QuestionMode } from './listening';
 import type { ReviewBook } from './review';
 
 /**
@@ -18,6 +19,13 @@ export interface Question {
   readonly answerIndex: number;
   /** 追得回這題從哪來：手寫題庫的 row id，或之後 AI 產線的批次 id。 */
   readonly sourceId: string;
+  /**
+   * 看字還是聽音。由複習狀態決定（見 listening.ts）。
+   *
+   * 這是「內容希望怎麼出」，不是「畫面最後怎麼出」——裝置放不出聲音時
+   * 由 UI 用 resolveMode() 降級回文字題。
+   */
+  readonly mode: QuestionMode;
 }
 
 export interface QuestionRequest {

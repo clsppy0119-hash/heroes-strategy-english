@@ -72,6 +72,11 @@ export interface QuestionShown {
   readonly battleId: string;
   readonly round: number;
   readonly questionId: string;
+  /**
+   * 看字還是聽音。沒有這個欄位就分不出「聽力題答對率低」是題型難
+   * 還是那批字難——而那正是聽力題該不該留下來的判準。
+   */
+  readonly mode: string;
 }
 
 export interface QuestionAnswered {
@@ -84,6 +89,8 @@ export interface QuestionAnswered {
   readonly elapsedMs: number;
   /** 送出這一題之後的連對數。 */
   readonly streak: number;
+  /** 看字還是聽音。聽力題的作答時間本來就會比較長，分開看才有意義。 */
+  readonly mode: string;
 }
 
 export interface QuestionSkipped {
