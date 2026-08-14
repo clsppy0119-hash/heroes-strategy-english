@@ -33,6 +33,7 @@ import {
   ownedCount,
   recallMarch,
   remainingMs,
+  resumeGame,
   retreat,
   roundsFor,
   settleTime,
@@ -50,6 +51,13 @@ import {
   type Tile,
 } from "@/core";
 import { t, type MessageKey } from "@/i18n";
+import { LOCAL_PLAYER_ID, gameRepository } from "@/persistence";
+
+/** 回來時桌上多出來的東西。零的話不打擾玩家。 */
+interface Welcome {
+  readonly awayMs: number;
+  readonly grain: number;
+}
 
 const TOTAL_TILES = GRID_SIZE * GRID_SIZE - 1;
 
@@ -72,8 +80,12 @@ function seconds(ms: number): number {
  * 一段時間有多長。
  *
  * 兩分鐘以下寫秒：驛站第一級是 90 秒，四捨五入成「2 分」或「1 分」都不是實話。
+ * 兩小時以上寫小時：離線一夜回來看到「還要 540 分」沒有人在心裡除得動。
  */
 function durationLabel(ms: number): string {
+  if (ms >= 7_200_000) {
+    return t("build.hours", { hours: Math.round(ms / 3_600_000) });
+  }
   return ms >= 120_000
     ? t("build.minutes", { minutes: Math.round(ms / 60_000) })
     : t("march.seconds", { seconds: seconds(ms) });
@@ -109,14 +121,58 @@ export function Campaign() {
   // 心跳存下來的「現在」。render 期間不能取時間（不純），倒數要靠這個。
   const [now, setNow] = useState<number>(CLOCK_NOT_STARTED);
 
+  /** 讀檔之後才開始自動存檔。不然掛載那一瞬間的空局面會蓋掉真正的存檔。 */
+  const [loaded, setLoaded] = useState(false);
+  /** 這次回來補到多少離線產出。零或還沒讀檔時不顯示。 */
+  const [welcomeBack, setWelcomeBack] = useState<Welcome | null>(null);
+
   // 作答時間要從「題目出現」算起，不是從 render 算起。
   const shownAt = useRef<number>(0);
   // render 期間不能取時間（不純），所以掛載後才記 session 起點。
   const sessionStart = useRef<number>(0);
 
-  // 掛載後對時，然後定期補算——玩家看著糧草長，那是「時間在動」的唯一證據。
+  /**
+   * 讀檔。
+   *
+   * 伺服器端 render 沒有 localStorage，而且 render 期間不能取時間，
+   * 所以初始狀態是一個「還不知道現在幾點」的空局面，掛載後才換成真的。
+   */
   useEffect(() => {
-    sessionStart.current = Date.now();
+    let cancelled = false;
+    const repository = gameRepository();
+
+    void repository.load(LOCAL_PLAYER_ID).then((result) => {
+      if (cancelled) {
+        return;
+      }
+      const at = Date.now();
+      sessionStart.current = at;
+
+      const restored = result.ok ? resumeGame(result.state, at) : createGame(SEED_TEXT, at);
+      const offlineGrain = result.ok ? restored.grain - result.state.grain : 0;
+
+      track({
+        type: "session_start",
+        sinceLastSaveMs: result.ok ? at - result.savedAt : null,
+        loaded: result.ok ? "ok" : result.reason,
+        offlineGrain,
+      });
+
+      setGame(restored);
+      setNow(at);
+      setLoaded(true);
+      if (result.ok && offlineGrain > 0) {
+        setWelcomeBack({ awayMs: at - result.savedAt, grain: offlineGrain });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // 對時之後定期補算——玩家看著糧草長，那是「時間在動」的唯一證據。
+  useEffect(() => {
     const tick = () => {
       const at = Date.now();
       setNow(at);
@@ -126,6 +182,38 @@ export function Campaign() {
     const timer = setInterval(tick, TICK_MS);
     return () => clearInterval(timer);
   }, []);
+
+  /**
+   * 自動存檔。
+   *
+   * 不用 debounce：settleTime 在沒有產出的那幾秒會回傳同一個物件，
+   * 所以 game 的身分只在真的有事發生時才變，這個 effect 自然就不會每秒跑。
+   */
+  useEffect(() => {
+    if (!loaded) {
+      return;
+    }
+    void gameRepository().save(LOCAL_PLAYER_ID, game, Date.now());
+  }, [game, loaded]);
+
+  /**
+   * 關掉分頁前再存一次。
+   *
+   * 上面那個 effect 存的是「上一個有變化的局面」，而玩家最後那幾秒的產出
+   * 可能還沒觸發變化。pagehide 是行動瀏覽器唯一保證會發的離開事件——
+   * beforeunload 在 iOS Safari 上不一定會來。
+   */
+  useEffect(() => {
+    if (!loaded) {
+      return;
+    }
+    const flush = () => {
+      const at = Date.now();
+      void gameRepository().save(LOCAL_PLAYER_ID, settleTime(game, at), at);
+    };
+    window.addEventListener("pagehide", flush);
+    return () => window.removeEventListener("pagehide", flush);
+  }, [game, loaded]);
 
   /**
    * 完工是補算時間時算出來的，沒有一個「玩家按下去」的時刻可以埋點，
@@ -335,9 +423,14 @@ export function Campaign() {
     const at = Date.now();
     sessionStart.current = at;
     setNow(at);
-    setGame(createGame(SEED_TEXT, at));
+    // 存檔先清掉再寫新局面：中途當掉的話，寧可讓玩家從頭開始，
+    // 也不要留下一份「一半舊一半新」的存檔。
+    void gameRepository()
+      .clear(LOCAL_PLAYER_ID)
+      .then(() => setGame(createGame(SEED_TEXT, at)));
     setSelectedId(null);
     setQuestions([]);
+    setWelcomeBack(null);
   }, [game]);
 
   const battleTile = battle === null ? null : (game.tiles.find((tile) => tile.id === battle.tileId) ?? null);
@@ -350,6 +443,10 @@ export function Campaign() {
         captured={capturedCount(game)}
         onExport={exportRecords}
       />
+
+      {welcomeBack !== null && (
+        <WelcomeBack welcome={welcomeBack} onDismiss={() => setWelcomeBack(null)} />
+      )}
 
       {battle !== null && battle.outcome === "ongoing" ? (
         <BattlePanel
@@ -391,6 +488,31 @@ export function Campaign() {
         <WaitingForGrain game={game} onRestart={restart} />
       ) : null}
     </div>
+  );
+}
+
+/**
+ * 回來了。
+ *
+ * v0.2 要驗的假設是「隔天有東西在等你」。離線產糧算得再對，玩家沒看到
+ * 就等於沒發生——#21 的教訓是機制沒被看見等於沒做。所以這裡把「你不在的
+ * 這段時間發生了什麼」直接講出來，而不是讓玩家自己去比對數字。
+ */
+function WelcomeBack({ welcome, onDismiss }: { welcome: Welcome; onDismiss: () => void }) {
+  return (
+    <section className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-l-4 border-bronze bg-paper-raised py-3 pl-4 pr-5">
+      <p className="font-display text-lg font-bold">{t("resume.heading")}</p>
+      <p className="text-sm tabular-nums">
+        {t("resume.summary", { away: durationLabel(welcome.awayMs), grain: welcome.grain })}
+      </p>
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="ml-auto text-sm text-ink-soft underline underline-offset-4"
+      >
+        {t("resume.dismiss")}
+      </button>
+    </section>
   );
 }
 

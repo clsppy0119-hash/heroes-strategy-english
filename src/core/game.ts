@@ -114,10 +114,14 @@ export const CLOCK_NOT_STARTED = 0;
 export function settleTime(state: GameState, now: number): GameState {
   const capMs = offlineCapMs(state.buildings.granary.level);
 
-  // 這段期間完工的建築，按完工時間排序——順序錯了速率就套錯區間。
+  // 到期的建築，按完工時間排序——順序錯了速率就套錯區間。
+  //
+  // 不設下界（不要求晚於 settledAt）：讀檔時可能拿到一份完工時間早於時間戳的
+  // 存檔（時鐘被改過、或上一次結算沒寫回去）。那種工程一樣該完工，
+  // 而它的補算區間長度會是零，所以多切這一刀不會多發糧。
   const finishing = BUILDING_IDS.filter((id) => {
     const at = state.buildings[id].completesAt;
-    return at !== null && at > state.settledAt && at <= now;
+    return at !== null && at <= now;
   }).sort((a, b) => state.buildings[a].completesAt! - state.buildings[b].completesAt!);
 
   let current = state;
@@ -160,6 +164,17 @@ function accrueInto(state: GameState, until: number, capMs: number): GameState {
     settledAt: accrual.settledAt,
     forfeitedMs: state.forfeitedMs + accrual.forfeitedMs,
   };
+}
+
+/**
+ * 讀檔之後接回去玩。
+ *
+ * 做兩件事：把離開期間的時間補算完（糧、完工的建築、抵達的行軍都在這裡結算），
+ * 然後確保沒有殘留的戰鬥——`readSave` 已經不還原戰鬥，這裡再擋一次，
+ * 因為 repository 之外還有別的路可能餵狀態進來（測試、之後的伺服器）。
+ */
+export function resumeGame(state: GameState, now: number): GameState {
+  return settleTime(state.battle === null ? state : { ...state, battle: null }, now);
 }
 
 export type UpgradeBlockedReason = 'busy' | 'max-level' | 'not-enough-grain';

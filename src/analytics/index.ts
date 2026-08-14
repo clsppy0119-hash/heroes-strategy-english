@@ -8,6 +8,7 @@ export {
   createMemorySink,
   MAX_STORED_RECORDS,
   STORAGE_KEY,
+  trimRecords,
   type AnalyticsSink,
 } from './sinks';
 

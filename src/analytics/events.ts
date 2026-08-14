@@ -113,6 +113,22 @@ export interface TileCaptured {
   readonly sinceSessionStartMs: number;
 }
 
+/**
+ * 開一局。有存檔之後這才是「回訪」的證據。
+ *
+ * `sinceLastSaveMs` 就是隔日回訪要的那個數字：null 是新玩家，
+ * 幾分鐘是同一次遊玩重整分頁，超過一天的才算隔日回來。
+ */
+export interface SessionStart {
+  readonly type: 'session_start';
+  /** 距離上次存檔多久。沒有存檔時是 null。 */
+  readonly sinceLastSaveMs: number | null;
+  /** 讀檔的結果。壞掉的存檔要看得見，不然玩家進度消失我們不會知道。 */
+  readonly loaded: string;
+  /** 補算離線期間拿到多少糧。零代表玩家回來時桌上什麼都沒有。 */
+  readonly offlineGrain: number;
+}
+
 export interface SessionEnd {
   readonly type: 'session_end';
   readonly durationMs: number;
@@ -137,8 +153,17 @@ export type AnalyticsEvent =
   | QuestionSkipped
   | BattleEnd
   | TileCaptured
+  | SessionStart
   | SessionEnd
   | SelfCheckPing;
+
+/**
+ * session 的邊界事件。
+ *
+ * 存放空間滿了要丟舊資料時，這幾種要留下來——隔日回訪的分析只需要它們，
+ * 而每一場戰鬥的每一題都留著的話，幾天份的答題就會把跨天的紀錄擠掉。
+ */
+export const SESSION_EVENT_TYPES: readonly AnalyticsEventType[] = ['session_start', 'session_end'];
 
 export type AnalyticsEventType = AnalyticsEvent['type'];
 
