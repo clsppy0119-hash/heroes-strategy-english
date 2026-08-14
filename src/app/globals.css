@@ -140,24 +140,43 @@ body {
 }
 
 /*
- * 隊伍踏進一格。
+ * 走路。
  *
- * 從上一格的方向滑進來，所以看起來是「走過去」而不是「閃現」。
- * 距離刻意小於一格：跨格的位移要靠格子本身的位置表達，這裡只補那一下慣性。
+ * 上下擺是身體的重心起伏，換腳是兩張圖輪流出現。這個尺寸下關節角度看不出來，
+ * 看得出來的是「腳換了」——翻頁比補間可靠，也不會在慢一點的機器上變成滑步。
  */
-@keyframes columnStep {
-  from {
-    opacity: 0.35;
-    transform: scale(0.82);
+@keyframes trudge {
+  0%,
+  100% {
+    transform: translateY(0);
   }
-  to {
-    opacity: 1;
-    transform: scale(1);
+  50% {
+    transform: translateY(-0.7px);
   }
 }
 
-.animate-column {
-  animation: columnStep 420ms cubic-bezier(0.2, 0.9, 0.3, 1);
+@keyframes strideA {
+  0%,
+  49.99% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.soldier {
+  animation: trudge 0.64s ease-in-out infinite;
+}
+
+.stride-a {
+  animation: strideA 0.64s steps(1, end) infinite;
+}
+
+.stride-b {
+  animation: strideA 0.64s steps(1, end) infinite;
+  animation-delay: -0.32s;
 }
 
 /* 軍隊正往這一格去。慢而弱，只是要讓視線在滿版的沙盤上找得到目標。 */
@@ -176,10 +195,16 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /*
+   * 隊伍在沙盤上移動這件事本身是資訊，不關掉；關掉的是踏步與起伏。
+   * 減少動態不等於刪掉玩家需要知道的東西。
+   */
   .animate-strike,
   .animate-banner,
   .animate-target,
-  .animate-column {
+  .soldier,
+  .stride-a,
+  .stride-b {
     animation: none;
   }
   /* 動畫關掉之後目標格還是要看得出來，改用靜態外框。 */
