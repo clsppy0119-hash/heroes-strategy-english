@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { LISTEN_AFTER_SEEN, modeFor, resolveMode } from './listening';
+import { LISTEN_AFTER_SEEN, LISTENING_ENABLED, modeFor, resolveMode } from './listening';
 import { EMPTY_REVIEW_BOOK, recordAttempt, type ReviewBook } from './review';
 import { createStaticProvider, type VocabEntry } from './static-provider';
 import { seedFrom } from '@/core';
@@ -18,28 +18,53 @@ const bank: VocabEntry[] = Array.from({ length: 8 }, (_, i) => ({
 const answer = (book: ReviewBook, itemId: string, correct: boolean) =>
   recordAttempt(book, { itemId, correct, elapsedMs: 900, at: T0, context: 'b1' });
 
-/** 一句話講得完的規則：第一次看字，之後聽音。 */
-describe('第一次看字，之後聽音', () => {
+/**
+ * 規則本身：第一次看字，之後聽音。
+ *
+ * 總開關目前關著（題庫太小），但規則要繼續測——重新打開時才不用重寫。
+ * 所以這一組一律明確傳 enabled=true。
+ */
+describe('規則：第一次看字，之後聽音', () => {
   it('沒背過的字出文字題', () => {
-    expect(modeFor(undefined)).toBe('read');
+    expect(modeFor(undefined, true)).toBe('read');
   });
 
   it('看過一次之後就改成聽力題', () => {
     const book = answer(EMPTY_REVIEW_BOOK, 'v0', true);
-    expect(modeFor(book.v0)).toBe('listen');
+    expect(modeFor(book.v0, true)).toBe('listen');
   });
 
   it('答錯也算看過——重點是他見過這個字的樣子', () => {
     const book = answer(EMPTY_REVIEW_BOOK, 'v0', false);
-    expect(modeFor(book.v0)).toBe('listen');
+    expect(modeFor(book.v0, true)).toBe('listen');
   });
 
   it('門檻就是設定的次數，不多不少', () => {
     let book = EMPTY_REVIEW_BOOK;
     for (let seen = 1; seen <= LISTEN_AFTER_SEEN + 2; seen += 1) {
       book = answer(book, 'v0', true);
-      expect(modeFor(book.v0)).toBe(seen >= LISTEN_AFTER_SEEN ? 'listen' : 'read');
+      expect(modeFor(book.v0, true)).toBe(seen >= LISTEN_AFTER_SEEN ? 'listen' : 'read');
     }
+  });
+});
+
+/**
+ * 總開關。關掉的理由不是規則不好，是題庫只有二十個字時
+ * 玩家第二場就每一題都是聽力題——那是題庫太小的副作用。
+ */
+describe('總開關', () => {
+  it('目前是關著的', () => {
+    expect(LISTENING_ENABLED).toBe(false);
+  });
+
+  it('關著的時候，背過的字也照樣出文字題', () => {
+    const book = answer(EMPTY_REVIEW_BOOK, 'v0', true);
+    expect(modeFor(book.v0, false)).toBe('read');
+  });
+
+  it('不傳參數時吃總開關', () => {
+    const book = answer(EMPTY_REVIEW_BOOK, 'v0', true);
+    expect(modeFor(book.v0)).toBe(LISTENING_ENABLED ? 'listen' : 'read');
   });
 });
 
@@ -71,7 +96,7 @@ describe('出題時就帶著題型', () => {
     expect(questions.every((question) => question.mode === 'read')).toBe(true);
   });
 
-  it('背過的字出聽力題，沒背過的出文字題', () => {
+  it('總開關關著時，背過的字也出文字題', () => {
     let book = EMPTY_REVIEW_BOOK;
     for (const entry of bank.slice(0, 4)) {
       book = answer(book, entry.id, true);
@@ -83,7 +108,9 @@ describe('出題時就帶著題型', () => {
     });
 
     for (const question of questions) {
-      expect(question.mode).toBe(book[question.id] === undefined ? 'read' : 'listen');
+      expect(question.mode).toBe(
+        LISTENING_ENABLED && book[question.id] !== undefined ? 'listen' : 'read',
+      );
     }
   });
 
