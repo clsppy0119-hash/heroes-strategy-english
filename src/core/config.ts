@@ -108,7 +108,15 @@ export const MARCH_MS_PER_STEP = 4_000;
  */
 export const GRAIN_PER_BATTLE = 120;
 
-/** 地格等級對到題目難度。v0.1 的題庫只有兩級。 */
+/**
+ * 地格等級對到題目難度。
+ *
+ * v0.1 只有兩級，因為手寫的二十個字分不出三級。題庫換成從詞頻分級之後
+ * 就是一比一對上：越外圈的地，字越不常用。
+ *
+ * 這個對應要是漏掉一級（v0.1 的 `tileLevel <= 1 ? 1 : 2` 就是），
+ * 那一級的字會整批躺在題庫裡永遠不出現，而且不會有任何錯誤訊息。
+ */
 export function vocabLevelForTile(tileLevel: number): number {
-  return tileLevel <= 1 ? 1 : 2;
+  return Math.min(Math.max(1, tileLevel), MAX_LEVEL);
 }
