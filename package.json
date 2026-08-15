@@ -13,6 +13,7 @@
     "check:core": "node scripts/check-core-purity.mjs",
     "verify": "pnpm lint && pnpm typecheck && pnpm check:i18n && pnpm check:core && pnpm check:vocab && pnpm test && pnpm build",
     "gen:vocab": "node scripts/gen-vocab.mjs",
+    "build:vocab": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-vocab-from-ecdict.mjs",
     "check:vocab": "node scripts/check-vocab-sync.mjs",
     "analyze": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/analyze-playtest.mjs",
     "build:static": "node scripts/build-static.mjs"
@@ -29,6 +30,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
+    "opencc-js": "^1.4.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"

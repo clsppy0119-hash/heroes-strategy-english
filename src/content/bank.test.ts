@@ -1,13 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
+import { MAX_LEVEL, MAX_ROUNDS, vocabLevelForTile } from '@/core';
+
 import { VOCAB, vocabProvider } from './index';
 import { CHOICE_COUNT } from './static-provider';
 
 /** 針對真的題庫（content/vocab.v1.csv 產生的那份）跑，不是 fixture。 */
 
 describe('vocab.v1', () => {
-  it('有 20 個詞', () => {
-    expect(VOCAB).toHaveLength(20);
+  /**
+   * 不釘死題庫大小——那個數字每次換題庫都會變，釘住只會讓人習慣性改測試。
+   * 要釘的是「夠不夠用」。
+   */
+  it('題庫大到複習池排得出順序', () => {
+    expect(VOCAB.length).toBeGreaterThanOrEqual(100);
   });
 
   it('每個 level 都湊得出四個選項', () => {
@@ -17,6 +23,30 @@ describe('vocab.v1', () => {
     }
     for (const [level, count] of byLevel) {
       expect(count, `level ${level}`).toBeGreaterThanOrEqual(CHOICE_COUNT);
+    }
+  });
+
+  /**
+   * 地圖上每一種地格都要問得出題。
+   *
+   * v0.1 的 vocabLevelForTile 是 `tileLevel <= 1 ? 1 : 2`，題庫變成三級之後
+   * level 3 的字整批躺著永遠不會出現，而且不會有任何錯誤訊息——
+   * 那種漏不會炸，只會安靜地少掉三分之一的內容。
+   */
+  it('地圖問得到的每一級都有題目', () => {
+    for (let tileLevel = 1; tileLevel <= MAX_LEVEL; tileLevel += 1) {
+      const level = vocabLevelForTile(tileLevel);
+      const questions = vocabProvider.getQuestions({ count: MAX_ROUNDS, seed: 1, level });
+      expect(questions, `地格 LV.${tileLevel} → 題庫 level ${level}`).toHaveLength(MAX_ROUNDS);
+    }
+  });
+
+  it('題庫每一級都有地格用得到——沒有孤兒等級', () => {
+    const asked = new Set(
+      Array.from({ length: MAX_LEVEL }, (_, i) => vocabLevelForTile(i + 1)),
+    );
+    for (const level of new Set(VOCAB.map((entry) => entry.level))) {
+      expect(asked.has(level), `題庫 level ${level} 沒有任何地格會問到`).toBe(true);
     }
   });
 

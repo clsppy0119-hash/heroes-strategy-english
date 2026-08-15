@@ -42,3 +42,6 @@ next-env.d.ts
 
 # 測試場的原始匯出資料不進版控
 /playtest/
+
+# ECDICT 的原始檔是產生器的輸入，不是專案的一部分（65MB，MIT 授權，見 scripts/build-vocab-from-ecdict.mjs）
+ecdict.csv
