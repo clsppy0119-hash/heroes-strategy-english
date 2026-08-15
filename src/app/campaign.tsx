@@ -5,11 +5,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { storedRecords, track } from "@/analytics";
 import {
   EMPTY_REVIEW_BOOK,
+  exampleFor,
   recordAttempt,
   resolveMode,
   vocabProvider,
   type Question,
   type ReviewBook,
+  type VocabExample,
 } from "@/content";
 import {
   BUILDING_IDS,
@@ -69,6 +71,22 @@ import { canSpeak, speak } from "./speech";
 interface Welcome {
   readonly awayMs: number;
   readonly grain: number;
+}
+
+/**
+ * 剛答完的那一題。
+ *
+ * 局面已經往前走了（answerRound 回傳的是下一回合），這份資料是為了把畫面
+ * 停在上一題——玩家要看的是「我剛剛那題對不對、那個字怎麼用」，
+ * 而不是立刻被推到下一題。
+ */
+interface Reveal {
+  readonly question: Question;
+  readonly correct: boolean;
+  readonly skipped: boolean;
+  readonly damage: number;
+  readonly multiplier: number;
+  readonly example: VocabExample | null;
 }
 
 const TOTAL_TILES = GRID_SIZE * GRID_SIZE - 1;
@@ -146,6 +164,8 @@ export function Campaign() {
   const [loaded, setLoaded] = useState(false);
   /** 這次回來補到多少離線產出。零或還沒讀檔時不顯示。 */
   const [welcomeBack, setWelcomeBack] = useState<Welcome | null>(null);
+  /** 剛答完的那一題。不是 null 就把畫面停在它上面。 */
+  const [reveal, setReveal] = useState<Reveal | null>(null);
 
   // 作答時間要從「題目出現」算起，不是從 render 算起。
   const shownAt = useRef<number>(0);
@@ -443,17 +463,24 @@ export function Campaign() {
         });
       }
 
+      /*
+        答完先停一拍，把正確答案跟例句攤開來看。
+
+        下一題的 question_shown 與 shownAt 不在這裡發——那會把「讀例句的時間」
+        算進下一題的作答時間裡，而作答時間是判定亂猜的依據（#7）。
+        等玩家按下繼續才算下一題開始。
+      */
       const finished = next.battle!;
-      if (finished.outcome === "ongoing") {
-        track({
-          type: "question_shown",
-          battleId: finished.battleId,
-          round: finished.round,
-          questionId: questions[finished.round].id,
-          mode: questions[finished.round].mode,
-        });
-        shownAt.current = Date.now();
-      } else {
+      setReveal({
+        question,
+        correct: resolved.correct,
+        skipped: choiceIndex === null,
+        damage: resolved.damage,
+        multiplier: resolved.multiplier,
+        example: exampleFor(question.id) ?? null,
+      });
+
+      if (finished.outcome !== "ongoing") {
         track({
           type: "battle_end",
           battleId: finished.battleId,
@@ -477,6 +504,27 @@ export function Campaign() {
     },
     [battle, game, questions],
   );
+
+  /** 看完例句，繼續。下一題從這一刻才開始計時。 */
+  const continueFromReveal = useCallback(() => {
+    setReveal(null);
+    const current = game.battle;
+    if (current === null || current.outcome !== "ongoing") {
+      return;
+    }
+    const upcoming = questions[current.round];
+    if (upcoming === undefined) {
+      return;
+    }
+    track({
+      type: "question_shown",
+      battleId: current.battleId,
+      round: current.round,
+      questionId: upcoming.id,
+      mode: upcoming.mode,
+    });
+    shownAt.current = Date.now();
+  }, [game, questions]);
 
   const giveUp = useCallback(() => {
     if (battle === null || battle.outcome !== "ongoing") {
@@ -533,7 +581,13 @@ export function Campaign() {
         <WelcomeBack welcome={welcomeBack} onDismiss={() => setWelcomeBack(null)} />
       )}
 
-      {battle !== null && battle.outcome === "ongoing" ? (
+      {reveal !== null ? (
+        <RoundReveal
+          reveal={reveal}
+          hasNextRound={battle !== null && battle.outcome === "ongoing"}
+          onContinue={continueFromReveal}
+        />
+      ) : battle !== null && battle.outcome === "ongoing" ? (
         <BattlePanel
           battle={battle}
           tile={battleTile}
@@ -1111,6 +1165,88 @@ function ForceBar({
         />
       </div>
     </div>
+  );
+}
+
+/**
+ * 答完一題之後停的那一拍。
+ *
+ * ## 為什麼要停
+ *
+ * 玩家剛做完判斷，注意力正在那個字上——那是例句唯一會被讀進去的時刻。
+ * 直接推到下一題的話，答錯的人永遠不知道正解是什麼，答對的人也沒看過
+ * 那個字怎麼用。
+ *
+ * ## 代價
+ *
+ * 每一題多一次點擊。三回合的仗就是多三下。如果實際玩起來覺得拖，
+ * 這裡改成幾秒後自動繼續就好——但預設給玩家自己決定看多久，
+ * 因為讀例句的速度差很多。
+ */
+function RoundReveal({
+  reveal,
+  hasNextRound,
+  onContinue,
+}: {
+  reveal: Reveal;
+  /** 這場仗還沒打完，按下去是下一題而不是戰報。 */
+  hasNextRound: boolean;
+  onContinue: () => void;
+}) {
+  const answer = reveal.question.choices[reveal.question.answerIndex];
+
+  return (
+    <section className="flex flex-col gap-5">
+      <div
+        className={`flex flex-col gap-1 border-l-4 pl-4 ${
+          reveal.correct ? "border-vermilion" : "border-azure"
+        }`}
+      >
+        <p
+          className={`font-display text-2xl font-bold ${
+            reveal.correct ? "text-vermilion" : "text-azure"
+          }`}
+        >
+          {reveal.skipped
+            ? t("reveal.skipped")
+            : reveal.correct
+              ? t("reveal.correct")
+              : t("reveal.wrong")}
+        </p>
+        <p className="font-mono text-xs tabular-nums text-ink-soft">
+          {reveal.correct
+            ? t("reveal.damageCrit", { multiplier: reveal.multiplier, damage: reveal.damage })
+            : t("reveal.damage", { damage: reveal.damage })}
+        </p>
+      </div>
+
+      {/* 答錯的人在這裡才第一次看到正解，所以字要大。 */}
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-y border-rule py-4">
+        <span className="font-display text-4xl font-bold tracking-tight">
+          {reveal.question.prompt}
+        </span>
+        <span className="font-display text-2xl font-bold text-bronze">{answer}</span>
+      </div>
+
+      {reveal.example !== null && (
+        <div className="flex flex-col gap-2 border border-rule bg-paper-raised p-5">
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-soft">
+            {t("reveal.example")}
+          </p>
+          <p className="text-xl leading-relaxed">{reveal.example.en}</p>
+          <p className="text-sm text-ink-soft">{reveal.example.zh}</p>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={onContinue}
+        autoFocus
+        className="self-start bg-vermilion px-6 py-2.5 font-display text-base font-bold text-paper"
+      >
+        {hasNextRound ? t("reveal.continue") : t("reveal.report")}
+      </button>
+    </section>
   );
 }
 
