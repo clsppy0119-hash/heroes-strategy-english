@@ -23,8 +23,30 @@ export type QuestionMode = 'read' | 'listen';
 /** 看過幾次之後改出聽力題。 */
 export const LISTEN_AFTER_SEEN = 1;
 
-/** 這個字這次該用哪種題型。沒背過的字傳 undefined。 */
-export function modeFor(state: ReviewState | undefined): QuestionMode {
+/**
+ * 聽力題的總開關。**目前關著**（2026-08-14 lionw：先不做聽力）。
+ *
+ * 關掉的理由不是規則不好，是題庫太小：只有二十個字時，玩家第二場就
+ * 每一題都是聽力題——那不是難度曲線，那是二十個字的副作用。
+ * 題庫變大（#31）之後再打開，一行的事。
+ *
+ * 規則本身留著也繼續測（modeFor 的 enabled 參數），這樣重新打開時
+ * 不需要重寫，只要把這個值改成 true。
+ */
+export const LISTENING_ENABLED = false;
+
+/**
+ * 這個字這次該用哪種題型。沒背過的字傳 undefined。
+ *
+ * `enabled` 預設吃上面那個開關；測試傳 true 進來驗規則本身。
+ */
+export function modeFor(
+  state: ReviewState | undefined,
+  enabled: boolean = LISTENING_ENABLED,
+): QuestionMode {
+  if (!enabled) {
+    return 'read';
+  }
   return (state?.seen ?? 0) >= LISTEN_AFTER_SEEN ? 'listen' : 'read';
 }
 
