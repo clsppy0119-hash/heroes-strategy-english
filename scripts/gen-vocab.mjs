@@ -11,6 +11,7 @@ import process from 'node:process';
  */
 
 const SOURCE = 'content/vocab.v1.csv';
+const EXAMPLES_SOURCE = 'content/examples.v1.tsv';
 const TARGET = 'src/content/vocab.generated.ts';
 const COLUMNS = ['id', 'en', 'zh', 'level', 'source'];
 const MIN_ENTRIES_PER_LEVEL = 6;
@@ -80,7 +81,42 @@ function validate(entries) {
   return problems;
 }
 
-function render(entries) {
+/**
+ * 例句。用 TSV 不是 CSV，因為句子裡一定有逗號——換成 tab 比寫一個完整的
+ * CSV parser 單純，而句子裡不會有 tab。
+ *
+ * 例句是選配的：沒有這個檔、或某個字沒有例句，遊戲照樣跑，只是答完不顯示。
+ */
+function parseExamples() {
+  let text;
+  try {
+    text = readFileSync(EXAMPLES_SOURCE, 'utf8');
+  } catch {
+    return new Map();
+  }
+
+  const rows = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  if (rows[0] !== ['id', 'en', 'zh'].join('\t')) {
+    throw new Error(`${EXAMPLES_SOURCE} 的欄位應該是 id/en/zh`);
+  }
+
+  const examples = new Map();
+  for (const [index, row] of rows.slice(1).entries()) {
+    const cells = row.split('\t');
+    if (cells.length !== 3) {
+      throw new Error(`${EXAMPLES_SOURCE}:${index + 2} 有 ${cells.length} 欄，應該是 3`);
+    }
+    const [id, en, zh] = cells;
+    examples.set(id, { en, zh });
+  }
+  return examples;
+}
+
+function render(entries, examples) {
   const rows = entries
     .map(
       (e) =>
@@ -88,20 +124,39 @@ function render(entries) {
     )
     .join('\n');
 
-  return `// 由 scripts/gen-vocab.mjs 從 ${SOURCE} 產生，不要手動編輯。
-// 改題庫請改 CSV，然後跑 pnpm gen:vocab。
+  // 例句用 JSON.stringify 而不是自己包單引號：句子裡的撇號（can't、I'm）
+  // 很常見，自己包會生出壞掉的 TypeScript。第一版是把含撇號的句子丟掉，
+  // 780 個字裡少了 135 句——為了一個引號問題丟資料，順序完全反了。
+  const quote = (text) => JSON.stringify(text);
 
-import type { VocabEntry } from './static-provider';
+  const exampleRows = entries
+    .filter((e) => examples.has(e.id))
+    .map((e) => {
+      const example = examples.get(e.id);
+      return `  ${e.id}: { en: ${quote(example.en)}, zh: ${quote(example.zh)} },`;
+    })
+    .join('\n');
+
+  return `// 由 scripts/gen-vocab.mjs 從 ${SOURCE} 與 ${EXAMPLES_SOURCE} 產生，不要手動編輯。
+// 改題庫請改 CSV／TSV，然後跑 pnpm gen:vocab。
+
+import type { VocabEntry, VocabExample } from './static-provider';
 
 export const VOCAB_SOURCE = '${SOURCE}';
 
 export const VOCAB: readonly VocabEntry[] = [
 ${rows}
 ];
+
+/** 例句。不是每個字都有——沒有的字答完就不顯示例句。 */
+export const EXAMPLES: Readonly<Record<string, VocabExample>> = {
+${exampleRows}
+};
 `;
 }
 
 const entries = parseCsv(readFileSync(SOURCE, 'utf8'));
+const examples = parseExamples();
 const problems = validate(entries);
 
 if (problems.length > 0) {
@@ -112,5 +167,6 @@ if (problems.length > 0) {
   process.exit(1);
 }
 
-writeFileSync(TARGET, render(entries), 'utf8');
-console.log(`✓ ${TARGET} — ${entries.length} 個詞`);
+writeFileSync(TARGET, render(entries, examples), 'utf8');
+const withExample = entries.filter((e) => examples.has(e.id)).length;
+console.log(`✓ ${TARGET} — ${entries.length} 個詞，${withExample} 個有例句`);

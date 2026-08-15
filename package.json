@@ -14,6 +14,7 @@
     "verify": "pnpm lint && pnpm typecheck && pnpm check:i18n && pnpm check:core && pnpm check:vocab && pnpm test && pnpm build",
     "gen:vocab": "node scripts/gen-vocab.mjs",
     "build:vocab": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-vocab-from-ecdict.mjs",
+    "build:examples": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-examples-from-tatoeba.mjs",
     "check:vocab": "node scripts/check-vocab-sync.mjs",
     "analyze": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/analyze-playtest.mjs",
     "build:static": "node scripts/build-static.mjs"

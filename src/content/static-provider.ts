@@ -18,6 +18,18 @@ export interface VocabEntry {
   readonly source: string;
 }
 
+/**
+ * 一個字的例句。
+ *
+ * 跟 VocabEntry 分開存而不是多兩個欄位：不是每個字都有例句，而選配的欄位
+ * 混在必填的結構裡，每個讀它的地方都要先判斷有沒有。分開之後「有沒有例句」
+ * 就是一次查表，型別上也看得出來。
+ */
+export interface VocabExample {
+  readonly en: string;
+  readonly zh: string;
+}
+
 const CHOICE_COUNT = 4;
 
 export function createStaticProvider(bank: readonly VocabEntry[]): ContentProvider {

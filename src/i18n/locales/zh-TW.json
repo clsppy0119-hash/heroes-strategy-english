@@ -78,6 +78,15 @@
   "battle.noStreak": "尚未連對",
   "battle.retreat": "鳴金收兵",
 
+  "reveal.correct": "判讀正確",
+  "reveal.wrong": "判讀失誤",
+  "reveal.skipped": "略過判讀",
+  "reveal.damageCrit": "暴擊 ×{multiplier}．造成 {damage}",
+  "reveal.damage": "造成 {damage}",
+  "reveal.example": "斥候的原話",
+  "reveal.continue": "繼續",
+  "reveal.report": "看戰報",
+
   "battle.intel": "斥候回報",
   "battle.listen.mark": "♪",
   "battle.listen.replay": "再聽一次",
