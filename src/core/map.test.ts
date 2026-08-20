@@ -10,7 +10,7 @@ import {
   distanceFromCity,
   findTile,
   levelForDistance,
-  marchOrigin,
+  stepsBetween,
   marchableTiles,
   tileId,
   type Tile,
@@ -84,50 +84,32 @@ describe('等級配置站得住', () => {
 });
 
 /**
- * 從哪裡出發。行軍時間是用「出發地到目標」算的，所以挑錯出發地
- * 會讓時間也錯——而那不會報錯，只會讓等待變長或變短。
+ * 隊伍打完就地駐紮，下一趟行軍的長度是「隊伍現在的位置到目標」。
+ * 算錯不會報錯，只會讓等待變長或變短。
  */
-describe('出兵的出發地', () => {
-  it('一開始只能從主城出發', () => {
-    const target = findTile(tiles, tileId(CITY_X + 1, CITY_Y))!;
-    expect(marchOrigin(tiles, target)?.id).toBe(tileId(CITY_X, CITY_Y));
+describe('兩格之間要走幾步', () => {
+  const at = (x: number, y: number) => findTile(tiles, tileId(x, y))!;
+
+  it('相鄰是一步', () => {
+    expect(stepsBetween(at(CITY_X, CITY_Y), at(CITY_X + 1, CITY_Y))).toBe(1);
   });
 
-  it('出發地一定跟目標相鄰', () => {
+  it('原地是零步', () => {
+    expect(stepsBetween(at(2, 2), at(2, 2))).toBe(0);
+  });
+
+  it('走的是格線不是直線——斜對角是兩步', () => {
+    expect(stepsBetween(at(2, 2), at(3, 3))).toBe(2);
+  });
+
+  it('對調兩邊結果一樣', () => {
+    expect(stepsBetween(at(0, 0), at(5, 5))).toBe(stepsBetween(at(5, 5), at(0, 0)));
+  });
+
+  it('從主城算就是離主城的距離', () => {
     for (const tile of tiles) {
-      const from = marchOrigin(tiles, tile);
-      if (from !== undefined) {
-        expect(Math.abs(from.x - tile.x) + Math.abs(from.y - tile.y)).toBe(1);
-      }
+      expect(stepsBetween(at(CITY_X, CITY_Y), tile)).toBe(distanceFromCity(tile.x, tile.y));
     }
-  });
-
-  it('出發地一定是自己的地', () => {
-    for (const tile of tiles) {
-      expect(marchOrigin(tiles, tile)?.owned ?? true).toBe(true);
-    }
-  });
-
-  it('沒有相鄰的己方領地就沒有出發地', () => {
-    const corner = findTile(tiles, tileId(0, 0))!;
-    expect(marchOrigin(tiles, corner)).toBeUndefined();
-  });
-
-  /** 有好幾塊可以出發時挑離主城最近的，畫面上才像從內地往外推。 */
-  it('相鄰的己方領地不只一塊時，挑離主城最近的', () => {
-    const near = tileId(CITY_X + 1, CITY_Y); // (3,2) 離主城 1 步
-    const far = tileId(CITY_X + 2, CITY_Y - 1); // (4,1) 離主城 3 步
-    const owned = tiles.map((tile) => ([near, far].includes(tile.id) ? { ...tile, owned: true } : tile));
-
-    // (4,2) 跟兩者都相鄰。
-    const target = findTile(owned, tileId(CITY_X + 2, CITY_Y))!;
-    expect(distanceFromCity(target.x, target.y)).toBe(2);
-    expect(marchOrigin(owned, target)?.id).toBe(near);
-  });
-
-  it('同一個局面永遠挑同一塊，隊伍不會在重畫時瞬移', () => {
-    const target = findTile(tiles, tileId(CITY_X, CITY_Y - 1))!;
-    expect(marchOrigin(tiles, target)?.id).toBe(marchOrigin(tiles, target)?.id);
   });
 });
 

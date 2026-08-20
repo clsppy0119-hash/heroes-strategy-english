@@ -42,9 +42,14 @@ import type { TileId } from './map';
 export type Heading = 'out' | 'home';
 
 export interface March {
-  /** 去程是目標，回程是從哪裡撤回來的。兩者都是同一塊地。 */
+  /**
+   * 要去哪。出征是目標地，班師是主城。
+   *
+   * 方向不影響這兩個欄位的意義：`fromTileId` 永遠是起點、`tileId` 永遠是終點。
+   * 早期版本讓它們隨方向對調，結果畫面每次都要先判斷方向才知道該從哪畫到哪。
+   */
   readonly tileId: TileId;
-  /** 出發的那塊己方領地。回程走回這裡，畫面上的隊伍也從這裡起步。 */
+  /** 從哪出發。 */
   readonly fromTileId: TileId;
   readonly departedAt: number;
   readonly arrivesAt: number;
@@ -91,7 +96,7 @@ export function startMarch(
   };
 }
 
-/** 打完之後從那塊地走回出發地。 */
+/** 走回主城。`tileId` 是主城，`fromTileId` 是隊伍現在站的地方。 */
 export function startReturn(
   tileId: TileId,
   fromTileId: TileId,

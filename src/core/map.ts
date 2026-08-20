@@ -107,30 +107,13 @@ export function isAdjacent(a: Tile, b: Tile): boolean {
 }
 
 /**
- * 從哪一塊己方領地出發。
+ * 兩格之間要走幾步（正交）。
  *
- * 合法的目標一定跟某塊己方領地相鄰，但可能相鄰不只一塊。挑離主城最近的那一塊，
- * 理由有二：畫面上看起來像從內地往外推（而不是從某個隨機的側翼冒出來），
- * 以及它是決定性的——同一個局面永遠挑同一塊，隊伍不會在重畫時瞬移。
- *
- * 沒有相鄰的己方領地時回 undefined，那代表這一步本來就不該成立。
+ * 隊伍打完就地駐紮，所以下一趟行軍的長度是「隊伍現在的位置到目標」——
+ * 不是離主城多遠，也不是固定一格。深入角落之後想打對面，就得付那段路。
  */
-export function marchOrigin(tiles: readonly Tile[], target: Tile): Tile | undefined {
-  let best: Tile | undefined;
-  for (const tile of tiles) {
-    if (!tile.owned || !isAdjacent(tile, target)) {
-      continue;
-    }
-    if (
-      best === undefined ||
-      distanceFromCity(tile.x, tile.y) < distanceFromCity(best.x, best.y) ||
-      // 距離一樣時用 id 決勝，才不會依賴陣列順序。
-      (distanceFromCity(tile.x, tile.y) === distanceFromCity(best.x, best.y) && tile.id < best.id)
-    ) {
-      best = tile;
-    }
-  }
-  return best;
+export function stepsBetween(a: Tile, b: Tile): number {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
 
 /** 只能打「跟已佔領地格正交相鄰」的地格。 */
