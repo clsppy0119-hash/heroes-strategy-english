@@ -30,6 +30,8 @@ import {
   engageBattle,
   grainPerHour,
   isUnderConstruction,
+  armyAtCapital,
+  distanceFromCity,
   marchBlockedReason,
   marchDurationMs,
   marchHasArrived,
@@ -37,6 +39,7 @@ import {
   maxLevelOf,
   msPerGrain,
   orderMarch,
+  orderReturn,
   previewDamage,
   previewMultiplier,
   ownedCount,
@@ -44,6 +47,8 @@ import {
   remainingMs,
   resumeGame,
   retreat,
+  returnDurationMs,
+  stepsBetween,
   roundsFor,
   settleTime,
   startClock,
@@ -62,7 +67,7 @@ import {
 import { t, type MessageKey } from "@/i18n";
 import { LOCAL_PLAYER_ID, gameRepository, reviewRepository } from "@/persistence";
 
-import { MarchColumn, useTileCenters } from "./march-column";
+import { ArmyMarker, MarchColumn, useTileCenters } from "./march-column";
 import { canSpeak, speak } from "./speech";
 
 /** 回來時桌上多出來的東西。零的話不打擾玩家。 */
@@ -297,7 +302,10 @@ export function Campaign() {
         type: "march_ordered",
         tileId: tile.id,
         tileLevel: tile.level,
-        durationMs: marchDurationMs(1, game.buildings.relay.level),
+        durationMs: marchDurationMs(
+          stepsBetween(game.tiles.find((each) => each.id === game.armyAt) ?? tile, tile),
+          game.buildings.relay.level,
+        ),
       });
       setGame(orderMarch(game, tile.id, Date.now()));
     },
@@ -319,6 +327,10 @@ export function Campaign() {
     },
     [game],
   );
+
+  const goHome = useCallback(() => {
+    setGame(orderReturn(game, Date.now()));
+  }, [game]);
 
   const recall = useCallback(() => {
     if (game.march === null) {
@@ -424,7 +436,7 @@ export function Campaign() {
       const question = questions[battle.round];
       const at = Date.now();
       const elapsedMs = at - shownAt.current;
-      const next = answerRound(game, choiceIndex, at);
+      const next = answerRound(game, choiceIndex);
       const resolved = next.battle!.log[next.battle!.log.length - 1];
 
       /*
@@ -528,7 +540,7 @@ export function Campaign() {
     if (battle === null || battle.outcome !== "ongoing") {
       return;
     }
-    const next = retreat(game, Date.now());
+    const next = retreat(game);
     track({
       type: "battle_end",
       battleId: battle.battleId,
@@ -607,6 +619,7 @@ export function Campaign() {
           onSelect={(tile) => setSelectedId(tile.id)}
           onMarch={order}
           onRecall={recall}
+          onReturn={goHome}
         />
       )}
 
@@ -872,6 +885,7 @@ function Sandtable({
   onSelect,
   onMarch,
   onRecall,
+  onReturn,
 }: {
   game: GameState;
   selected: Tile | null;
@@ -879,22 +893,13 @@ function Sandtable({
   onSelect: (tile: Tile) => void;
   onMarch: (tile: Tile) => void;
   onRecall: () => void;
+  onReturn: () => void;
 }) {
   const march = game.march;
   const marchTile = march === null ? null : (game.tiles.find((tile) => tile.id === march.tileId) ?? null);
 
-  /**
-   * 行軍路線：出發地 → 目標，班師時反過來。
-   *
-   * 出兵一律從相鄰的己方領地出發，所以這條路線永遠只有兩格。原本是從主城
-   * 一路走過來的，但實測顯示那讓等待隨著版圖擴張越拖越長（見 core/march.ts）。
-   */
-  const path =
-    march === null
-      ? []
-      : march.heading === "home"
-        ? [march.tileId, march.fromTileId]
-        : [march.fromTileId, march.tileId];
+  /** 行軍路線：起點 → 終點。方向不影響這兩個欄位的意義。 */
+  const path = march === null ? [] : [march.fromTileId, march.tileId];
   const grid = useRef<HTMLDivElement>(null);
   const centers = useTileCenters(grid);
   const arrived = march !== null && now >= march.arrivesAt;
@@ -921,8 +926,11 @@ function Sandtable({
             />
           ))}
 
-          {march !== null && (
+          {march !== null ? (
             <MarchColumn march={march} path={path} centers={centers} arrived={arrived} now={now} />
+          ) : (
+            /* 沒在路上的時候隊伍也要看得見，否則玩家不知道自己下一趟從哪出發。 */
+            <ArmyMarker at={game.armyAt} centers={centers} />
           )}
         </div>
       </div>
@@ -931,7 +939,7 @@ function Sandtable({
         {march !== null ? (
           <MarchPanel march={march} tile={marchTile} now={now} onRecall={onRecall} />
         ) : (
-          <TileDetail game={game} tile={selected} onMarch={onMarch} />
+          <TileDetail game={game} tile={selected} onMarch={onMarch} onReturn={onReturn} />
         )}
       </aside>
     </div>
@@ -1000,19 +1008,55 @@ function MarchPanel({
   );
 }
 
+/**
+ * 選了一塊地之後的面板，外加「回城」。
+ *
+ * 回城放在這裡而不是另開一塊：隊伍閒著的時候玩家只有兩種選擇（往哪打、
+ * 要不要回去），擺在同一個地方才看得出那是同一個決定的兩面。
+ */
 function TileDetail({
   game,
   tile,
   onMarch,
+  onReturn,
 }: {
   game: GameState;
   tile: Tile | null;
   onMarch: (tile: Tile) => void;
+  onReturn: () => void;
 }) {
+  const army = game.tiles.find((each) => each.id === game.armyAt);
+  const home = armyAtCapital(game);
+  const homeSteps = army === undefined ? 0 : distanceFromCity(army.x, army.y);
+
+  /** 隊伍在外面時，不管選了哪一塊地都給得了回城。 */
+  const returnHome = home ? null : (
+    <div className="flex flex-col gap-2 border-t border-rule pt-3">
+      <p className="font-mono text-[11px] text-ink-soft">
+        {t("army.inField", { terrain: army === undefined ? "" : terrainName(army.terrain) })}
+      </p>
+      <button
+        type="button"
+        onClick={onReturn}
+        className="self-start border border-rule px-4 py-2 text-sm text-ink-soft"
+      >
+        {t("army.returnHome", {
+          seconds: seconds(returnDurationMs(homeSteps, game.buildings.relay.level)),
+        })}
+      </button>
+    </div>
+  );
+
   if (tile === null || tile.level === 0) {
-    return <p className="text-sm text-ink-soft">{t("tile.select")}</p>;
+    return (
+      <>
+        <p className="text-sm text-ink-soft">{t("tile.select")}</p>
+        {returnHome}
+      </>
+    );
   }
   const blocked = marchBlockedReason(game, tile.id);
+  const steps = army === undefined ? 1 : stepsBetween(army, tile);
 
   return (
     <>
@@ -1043,7 +1087,7 @@ function TileDetail({
           </dt>
           <dd className="font-mono text-lg tabular-nums text-ink-soft">
             {t("march.seconds", {
-              seconds: seconds(marchDurationMs(1, game.buildings.relay.level)),
+              seconds: seconds(marchDurationMs(steps, game.buildings.relay.level)),
             })}
           </dd>
         </div>
@@ -1070,6 +1114,8 @@ function TileDetail({
                   : t("tile.blocked.notAdjacent")}
         </p>
       )}
+
+      {returnHome}
     </>
   );
 }

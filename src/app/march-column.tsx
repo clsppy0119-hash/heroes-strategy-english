@@ -175,6 +175,38 @@ export function MarchColumn({
 }
 
 /**
+ * 駐紮中的隊伍。
+ *
+ * 打完不會自動班師，所以閒置時隊伍站在某一格上。畫出來的理由不是好看：
+ * 下一趟行軍多久是從這裡算的，玩家看不到隊伍就算不出來自己在付什麼。
+ */
+export function ArmyMarker({
+  at,
+  centers,
+}: {
+  at: TileId;
+  centers: Record<TileId, Center>;
+}) {
+  const center = centers[at];
+  if (center === undefined || center.size < MIN_TILE_PX) {
+    return null;
+  }
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute left-0 top-0"
+      style={{
+        width: center.size,
+        height: center.size,
+        transform: `translate3d(${center.x - center.size / 2}px, ${center.y - center.size / 2}px, 0)`,
+      }}
+    >
+      <Soldiers marching={false} />
+    </div>
+  );
+}
+
+/**
  * 一列三個人加一面旗。
  *
  * 腳的動作是兩張圖輪流出現（steps(1) 的翻頁），不是插值——這個尺寸下

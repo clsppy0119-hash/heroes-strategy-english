@@ -33,10 +33,11 @@ import { RULES_VERSION, type RulesVersion } from './rules';
  * 存檔外殼的形狀版本。改變 SaveEnvelope 的結構時遞增。
  *
  * 2：行軍加了 heading（出征／班師）。
- * 3：行軍加了 fromTileId（從哪塊己方領地出發）。舊存檔沒有這個欄位，
- *    隊伍會不知道要走回哪裡——與其猜，不如明確作廢。
+ * 3：行軍加了 fromTileId（從哪出發）。
+ * 4：局面多了 armyAt（隊伍閒著時站在哪）。打完不再自動班師，隊伍的位置
+ *    變成局面的一部分——舊存檔沒有它，隊伍會不知道自己在哪。
  */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export interface SaveEnvelope {
   readonly saveVersion: number;
@@ -205,6 +206,13 @@ export function readSave(raw: string | null): LoadResult {
     return { ok: false, reason: 'corrupt' };
   }
 
+  // 隊伍必須站在自己的地上。站在敵區的話下一趟行軍會從敵區出發，
+  // 而那個局面在遊戲規則裡到不了。
+  const army = tiles.find((tile) => tile.id === state.armyAt);
+  if (army === undefined || !army.owned) {
+    return { ok: false, reason: 'corrupt' };
+  }
+
   const march = readMarch(state.march, tiles);
   if (march === 'invalid') {
     return { ok: false, reason: 'corrupt' };
@@ -232,6 +240,7 @@ export function readSave(raw: string | null): LoadResult {
       tiles,
       grain: state.grain,
       buildings,
+      armyAt: army.id,
       march,
       battle: null,
       battlesStarted: state.battlesStarted,

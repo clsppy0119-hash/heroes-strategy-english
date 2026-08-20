@@ -111,8 +111,8 @@ describe('版本', () => {
     expect(readSave('')).toEqual({ ok: false, reason: 'empty' });
   });
 
-  it('目前的存檔版本是 3——行軍加了出發地欄位', () => {
-    expect(SAVE_VERSION).toBe(3);
+  it('目前的存檔版本是 4——局面多了隊伍的位置', () => {
+    expect(SAVE_VERSION).toBe(4);
   });
 
   it('外殼形狀變了就作廢', () => {
@@ -221,6 +221,15 @@ describe('壞掉的存檔一律作廢，不會讓遊戲掛掉', () => {
     },
     '行軍沒有出發地': (state) => {
       state.march = { tileId: NEAR, departedAt: T0, arrivesAt: T0 + 1000, heading: 'out' };
+    },
+    '沒有隊伍的位置': (state) => {
+      delete state.armyAt;
+    },
+    '隊伍站在不存在的地上': (state) => {
+      state.armyAt = '99,99';
+    },
+    '隊伍站在不是自己的地上——那個局面在規則裡到不了': (state) => {
+      state.armyAt = FAR;
     },
   };
 

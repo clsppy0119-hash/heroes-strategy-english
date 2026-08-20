@@ -18,7 +18,17 @@ import {
   type BattleState,
   type RoundQuestion,
 } from './battle';
-import { canMarchTo, createMap, findTile, marchOrigin, type Tile, type TileId } from './map';
+import {
+  CITY_X,
+  CITY_Y,
+  canMarchTo,
+  createMap,
+  findTile,
+  stepsBetween,
+  tileId,
+  type Tile,
+  type TileId,
+} from './map';
 import { hasArrived, startMarch, startReturn, type March } from './march';
 import { RULES_VERSION, type RulesVersion } from './rules';
 import { seedFrom, type RngState } from './rng';
@@ -44,6 +54,13 @@ export interface GameState {
   readonly tiles: readonly Tile[];
   readonly grain: number;
   readonly buildings: Buildings;
+  /**
+   * 隊伍閒著的時候站在哪一格。
+   *
+   * 打完不會自動班師——隊伍就地駐紮，玩家再決定要回城還是從這裡繼續打。
+   * 所以位置變成局面的一部分：下一趟行軍多久，看的是從這裡走到目標多遠。
+   */
+  readonly armyAt: TileId;
   /** 在路上的那支軍隊。抵達之後還是留在這裡，等玩家按「接敵」才轉成戰鬥。 */
   readonly march: March | null;
   readonly battle: BattleState | null;
@@ -63,6 +80,7 @@ export function createGame(seedText: string, now: number): GameState {
     tiles: createMap(),
     grain: START_GRAIN,
     buildings: createBuildings(),
+    armyAt: tileId(CITY_X, CITY_Y),
     march: null,
     battle: null,
     battlesStarted: 0,
@@ -147,6 +165,7 @@ export function settleTime(state: GameState, now: number): GameState {
   }
   return {
     ...current,
+    armyAt: home ? current.march!.tileId : current.armyAt,
     march: home ? null : current.march,
     // 補算完可能就有糧再出兵了，卡住的狀態要跟著解除。
     status: current.status === 'stuck' && current.grain >= MARCH_COST ? 'playing' : current.status,
@@ -284,17 +303,17 @@ export function orderMarch(state: GameState, id: TileId, now: number): GameState
     throw new Error(`no tile ${id}`);
   }
 
-  // 從最近的己方領地出發，不是從主城。合法目標一定跟己方領地相鄰，
-  // 所以走的永遠是一格——行軍時間因此不會隨著版圖擴張越拖越長。
-  const from = marchOrigin(state.tiles, tile);
+  // 從隊伍現在站的地方出發。相鄰的目標還是一格（九秒），但隊伍在角落時
+  // 想打對面就要走整段路——那是玩家自己選的，不是遊戲強加的。
+  const from = findTile(state.tiles, state.armyAt);
   if (from === undefined) {
-    throw new Error(`no owned tile next to ${id}`);
+    throw new Error(`army is nowhere: ${state.armyAt}`);
   }
 
   return {
     ...state,
     grain: state.grain - MARCH_COST,
-    march: startMarch(id, from.id, 1, state.buildings.relay.level, now),
+    march: startMarch(id, from.id, stepsBetween(from, tile), state.buildings.relay.level, now),
   };
 }
 
@@ -313,6 +332,38 @@ export function recallMarch(state: GameState): GameState {
     return state;
   }
   return { ...state, grain: state.grain + MARCH_COST, march: null };
+}
+
+/** 隊伍在主城裡。回城鍵要不要出現看這個。 */
+export function armyAtCapital(state: GameState): boolean {
+  return state.armyAt === tileId(CITY_X, CITY_Y);
+}
+
+/**
+ * 班師回朝。
+ *
+ * 走回主城要多久看隊伍現在在哪——深入角落的代價在這裡付。
+ * 回程一樣是去程的一半速度（打完就走，不必再探路）。
+ *
+ * 回城沒有直接的好處，它換的是位置：主城在中間，從那裡出發到任何一條
+ * 戰線都比從角落近。要不要付這段路，是玩家自己算的。
+ */
+export function orderReturn(state: GameState, now: number): GameState {
+  if (state.march !== null || armyAtCapital(state)) {
+    return state;
+  }
+  if (state.battle !== null && state.battle.outcome === 'ongoing') {
+    return state;
+  }
+  const from = findTile(state.tiles, state.armyAt);
+  const capital = findTile(state.tiles, tileId(CITY_X, CITY_Y));
+  if (from === undefined || capital === undefined) {
+    return state;
+  }
+  return {
+    ...state,
+    march: startReturn(capital.id, from.id, stepsBetween(from, capital), state.buildings.relay.level, now),
+  };
 }
 
 export function marchHasArrived(state: GameState, now: number): boolean {
@@ -365,7 +416,7 @@ export function engageBattle(state: GameState, questions: readonly RoundQuestion
  * 回程是狀態的一部分而不是動畫：軍隊在路上就不能再出兵，而那段時間
  * 要能撐過關掉分頁。所以它跟去程一樣存在 march 裡，只是方向相反。
  */
-function settle(state: GameState, battle: BattleState, now: number): GameState {
+function settle(state: GameState, battle: BattleState): GameState {
   const tiles =
     battle.outcome === 'won'
       ? state.tiles.map((tile) => (tile.id === battle.tileId ? { ...tile, owned: true } : tile))
@@ -376,41 +427,41 @@ function settle(state: GameState, battle: BattleState, now: number): GameState {
 
   const allTaken = tiles.every((tile) => tile.owned);
   const canAffordAnother = grain >= MARCH_COST;
-  // 從打完的那塊地走回出發地。出發地記在 march 裡，但戰鬥開始時 march
-  // 就清掉了，所以這裡用「離主城最近的相鄰己方領地」重算——同一個規則，
-  // 同一個結果。
-  const battlefield = findTile(tiles, battle.tileId);
-  const home = battlefield === undefined ? undefined : marchOrigin(state.tiles, battlefield);
+  /*
+    打完就地駐紮，不自動班師。
+
+    打贏就佔著那塊地；打輸（含中途鳴金）退回出發的地方——沒拿下的地
+    站不住。接下來要回城還是從這裡繼續打，是玩家的選擇。
+  */
+  const armyAt = battle.outcome === 'won' ? battle.tileId : state.armyAt;
 
   return {
     ...state,
     tiles,
     grain,
     battle,
-    march:
-      battlefield === undefined || home === undefined
-        ? null
-        : startReturn(battlefield.id, home.id, 1, state.buildings.relay.level, now),
+    armyAt,
+    march: null,
     battlesWon: state.battlesWon + (battle.outcome === 'won' ? 1 : 0),
     status: allTaken ? 'cleared' : canAffordAnother ? 'playing' : 'stuck',
   };
 }
 
-/** 結算一回合。戰鬥在這一回合結束的話，佔領、繳獲、班師一併算完。 */
-export function answerRound(state: GameState, choiceIndex: number | null, now: number): GameState {
+/** 結算一回合。戰鬥在這一回合結束的話，佔領與繳獲一併算完。 */
+export function answerRound(state: GameState, choiceIndex: number | null): GameState {
   if (state.battle === null || state.battle.outcome !== 'ongoing') {
     return state;
   }
   const battle = resolveBattleRound(state.battle, choiceIndex);
-  return battle.outcome === 'ongoing' ? { ...state, battle } : settle(state, battle, now);
+  return battle.outcome === 'ongoing' ? { ...state, battle } : settle(state, battle);
 }
 
-/** 中途離開。算成敗仗，糧草不退，一樣要走回來。 */
-export function retreat(state: GameState, now: number): GameState {
+/** 中途離開。算成敗仗，糧草不退，隊伍退回原本站的地方。 */
+export function retreat(state: GameState): GameState {
   if (state.battle === null || state.battle.outcome !== 'ongoing') {
     return state;
   }
-  return settle(state, abandonBattle(state.battle), now);
+  return settle(state, abandonBattle(state.battle));
 }
 
 /** 關掉戰報，回到地圖。 */
