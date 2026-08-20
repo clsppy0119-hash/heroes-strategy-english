@@ -126,20 +126,6 @@ body {
 }
 
 /*
- * 走過的路。
- *
- * 很淡：它是一條痕跡，不是一個狀態。玩家要一眼看出隊伍從主城走了多遠，
- * 但這些格子本身沒有任何意義，搶了注意力就變成雜訊。
- */
-.route {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    color-mix(in oklab, var(--bronze) 16%, transparent) 0 2px,
-    transparent 2px 6px
-  );
-}
-
-/*
  * 走路。
  *
  * 上下擺是身體的重心起伏，換腳是兩張圖輪流出現。這個尺寸下關節角度看不出來，

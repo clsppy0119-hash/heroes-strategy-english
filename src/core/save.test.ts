@@ -19,6 +19,9 @@ import { SAVE_VERSION, packSave, readSave } from './save';
 
 const T0 = 1_700_000_000_000;
 const NEAR = tileId(CITY_X + 1, CITY_Y);
+const CITY = tileId(CITY_X, CITY_Y);
+/** 離主城很遠、不是自己的地。 */
+const FAR = tileId(0, 0);
 
 const write = (state: GameState, savedAt = T0) => JSON.stringify(packSave(state, savedAt));
 
@@ -73,7 +76,7 @@ describe('存檔來回一趟', () => {
     const returning: GameState = {
       ...base,
       tiles: base.tiles.map((tile) => (tile.id === NEAR ? { ...tile, owned: true } : tile)),
-      march: startReturn(NEAR, CITY_X + 1, CITY_Y, 0, T0),
+      march: startReturn(NEAR, tileId(CITY_X, CITY_Y), 1, 0, T0),
     };
     const result = readSave(write(returning));
     expect(result.ok && result.state.march).toEqual(returning.march);
@@ -108,8 +111,8 @@ describe('版本', () => {
     expect(readSave('')).toEqual({ ok: false, reason: 'empty' });
   });
 
-  it('目前的存檔版本是 2——行軍加了方向欄位', () => {
-    expect(SAVE_VERSION).toBe(2);
+  it('目前的存檔版本是 3——行軍加了出發地欄位', () => {
+    expect(SAVE_VERSION).toBe(3);
   });
 
   it('外殼形狀變了就作廢', () => {
@@ -196,19 +199,28 @@ describe('壞掉的存檔一律作廢，不會讓遊戲掛掉', () => {
       state.status = 'winning';
     },
     '行軍的目標地不存在': (state) => {
-      state.march = { tileId: '99,99', departedAt: T0, arrivesAt: T0 + 1000 };
+      state.march = { tileId: '99,99', fromTileId: CITY, departedAt: T0, arrivesAt: T0 + 1000, heading: 'out' };
+    },
+    '出發地不存在': (state) => {
+      state.march = { tileId: NEAR, fromTileId: '99,99', departedAt: T0, arrivesAt: T0 + 1000, heading: 'out' };
+    },
+    '從不是自己的地出發——隊伍會從敵區冒出來': (state) => {
+      state.march = { tileId: NEAR, fromTileId: FAR, departedAt: T0, arrivesAt: T0 + 1000, heading: 'out' };
     },
     '行軍的抵達時間早於出發': (state) => {
-      state.march = { tileId: NEAR, departedAt: T0 + 1000, arrivesAt: T0 };
+      state.march = { tileId: NEAR, fromTileId: CITY, departedAt: T0 + 1000, arrivesAt: T0, heading: 'out' };
     },
     '行軍不是物件': (state) => {
       state.march = 42;
     },
     '行軍沒有標明方向——不知道要去哪還是要回來': (state) => {
-      state.march = { tileId: NEAR, departedAt: T0, arrivesAt: T0 + 1000 };
+      state.march = { tileId: NEAR, fromTileId: CITY, departedAt: T0, arrivesAt: T0 + 1000 };
     },
     '行軍的方向不是認得的值': (state) => {
-      state.march = { tileId: NEAR, departedAt: T0, arrivesAt: T0 + 1000, heading: 'sideways' };
+      state.march = { tileId: NEAR, fromTileId: CITY, departedAt: T0, arrivesAt: T0 + 1000, heading: 'sideways' };
+    },
+    '行軍沒有出發地': (state) => {
+      state.march = { tileId: NEAR, departedAt: T0, arrivesAt: T0 + 1000, heading: 'out' };
     },
   };
 

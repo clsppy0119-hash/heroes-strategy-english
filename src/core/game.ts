@@ -18,7 +18,7 @@ import {
   type BattleState,
   type RoundQuestion,
 } from './battle';
-import { canMarchTo, createMap, findTile, type Tile, type TileId } from './map';
+import { canMarchTo, createMap, findTile, marchOrigin, type Tile, type TileId } from './map';
 import { hasArrived, startMarch, startReturn, type March } from './march';
 import { RULES_VERSION, type RulesVersion } from './rules';
 import { seedFrom, type RngState } from './rng';
@@ -284,10 +284,17 @@ export function orderMarch(state: GameState, id: TileId, now: number): GameState
     throw new Error(`no tile ${id}`);
   }
 
+  // 從最近的己方領地出發，不是從主城。合法目標一定跟己方領地相鄰，
+  // 所以走的永遠是一格——行軍時間因此不會隨著版圖擴張越拖越長。
+  const from = marchOrigin(state.tiles, tile);
+  if (from === undefined) {
+    throw new Error(`no owned tile next to ${id}`);
+  }
+
   return {
     ...state,
     grain: state.grain - MARCH_COST,
-    march: startMarch(id, tile.x, tile.y, state.buildings.relay.level, now),
+    march: startMarch(id, from.id, 1, state.buildings.relay.level, now),
   };
 }
 
@@ -369,7 +376,11 @@ function settle(state: GameState, battle: BattleState, now: number): GameState {
 
   const allTaken = tiles.every((tile) => tile.owned);
   const canAffordAnother = grain >= MARCH_COST;
-  const from = findTile(state.tiles, battle.tileId);
+  // 從打完的那塊地走回出發地。出發地記在 march 裡，但戰鬥開始時 march
+  // 就清掉了，所以這裡用「離主城最近的相鄰己方領地」重算——同一個規則，
+  // 同一個結果。
+  const battlefield = findTile(tiles, battle.tileId);
+  const home = battlefield === undefined ? undefined : marchOrigin(state.tiles, battlefield);
 
   return {
     ...state,
@@ -377,9 +388,9 @@ function settle(state: GameState, battle: BattleState, now: number): GameState {
     grain,
     battle,
     march:
-      from === undefined
+      battlefield === undefined || home === undefined
         ? null
-        : startReturn(from.id, from.x, from.y, state.buildings.relay.level, now),
+        : startReturn(battlefield.id, home.id, 1, state.buildings.relay.level, now),
     battlesWon: state.battlesWon + (battle.outcome === 'won' ? 1 : 0),
     status: allTaken ? 'cleared' : canAffordAnother ? 'playing' : 'stuck',
   };

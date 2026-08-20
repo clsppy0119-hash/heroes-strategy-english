@@ -14,6 +14,9 @@
  *
  * 現在等級由「離主城多遠」決定：越往外越難。這同時給了地圖一個玩家看得懂的
  * 結構——你是從中心往外推的，不是在一堆隨機難度裡挑。
+ *
+ * 注意「離主城多遠」只決定**難度**。行軍時間看的是離最近的己方領地多遠
+ * （見 march.ts），兩者刻意分開：仗難不難跟路遠不遠是兩件事。
  */
 
 export const GRID_SIZE = 6;
@@ -95,61 +98,39 @@ export function createMap(): readonly Tile[] {
   return tiles;
 }
 
-/**
- * 從主城走到目標的路線，含頭含尾。
- *
- * ## 為什麼是從主城走，不是從最近的己方領地
- *
- * 行軍時間本來就是用「離主城幾步」算的（見 march.ts）。畫面上讓軍隊真的
- * 從主城走那麼多格，那個數字才變得看得懂——遠的地方久，是因為路真的長。
- *
- * 從最近的鄰地出發雖然比較寫實，但每次都只走一格，玩家看不出遠近的差別，
- * 那條規則就退回成一個沒有理由的數字。
- *
- * ## 為什麼先走 x 再走 y
- *
- * 沒有理由，只需要每次都一樣。走位不影響任何規則，它只是給眼睛看的；
- * 但同一場行軍每次重畫都要走同一條路，否則畫面會跳。
- */
-export function marchPath(toX: number, toY: number): readonly TileId[] {
-  const path: TileId[] = [tileId(CITY_X, CITY_Y)];
-  let x = CITY_X;
-  let y = CITY_Y;
-  while (x !== toX) {
-    x += toX > x ? 1 : -1;
-    path.push(tileId(x, y));
-  }
-  while (y !== toY) {
-    y += toY > y ? 1 : -1;
-    path.push(tileId(x, y));
-  }
-  return path;
-}
-
-/**
- * 走完 `progress`（0 到 1）之後，隊伍走到路線上的第幾格。
- *
- * 回傳的是索引不是座標，因為呼叫端要的是「哪幾格已經過了」——
- * 那才畫得出一條逐格亮起來的行軍路線。
- *
- * 下限是 1 而不是 0：下令的那一刻隊伍就該離開主城。停在主城等進度
- * 跨過半格才動的話，玩家按下出兵之後會有幾秒鐘什麼都沒發生，
- * 而那幾秒正是他在確認「我按到了嗎」的時候。
- */
-export function marchHeadIndex(path: readonly TileId[], progress: number): number {
-  const steps = path.length - 1;
-  if (steps <= 0) {
-    return 0;
-  }
-  return Math.min(steps, Math.max(1, Math.ceil(progress * steps)));
-}
-
 export function findTile(tiles: readonly Tile[], id: TileId): Tile | undefined {
   return tiles.find((tile) => tile.id === id);
 }
 
 export function isAdjacent(a: Tile, b: Tile): boolean {
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y) === 1;
+}
+
+/**
+ * 從哪一塊己方領地出發。
+ *
+ * 合法的目標一定跟某塊己方領地相鄰，但可能相鄰不只一塊。挑離主城最近的那一塊，
+ * 理由有二：畫面上看起來像從內地往外推（而不是從某個隨機的側翼冒出來），
+ * 以及它是決定性的——同一個局面永遠挑同一塊，隊伍不會在重畫時瞬移。
+ *
+ * 沒有相鄰的己方領地時回 undefined，那代表這一步本來就不該成立。
+ */
+export function marchOrigin(tiles: readonly Tile[], target: Tile): Tile | undefined {
+  let best: Tile | undefined;
+  for (const tile of tiles) {
+    if (!tile.owned || !isAdjacent(tile, target)) {
+      continue;
+    }
+    if (
+      best === undefined ||
+      distanceFromCity(tile.x, tile.y) < distanceFromCity(best.x, best.y) ||
+      // 距離一樣時用 id 決勝，才不會依賴陣列順序。
+      (distanceFromCity(tile.x, tile.y) === distanceFromCity(best.x, best.y) && tile.id < best.id)
+    ) {
+      best = tile;
+    }
+  }
+  return best;
 }
 
 /** 只能打「跟已佔領地格正交相鄰」的地格。 */

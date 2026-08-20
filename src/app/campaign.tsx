@@ -33,8 +33,6 @@ import {
   marchBlockedReason,
   marchDurationMs,
   marchHasArrived,
-  marchHeadIndex,
-  marchPath,
   marchProgress,
   maxLevelOf,
   msPerGrain,
@@ -299,7 +297,7 @@ export function Campaign() {
         type: "march_ordered",
         tileId: tile.id,
         tileLevel: tile.level,
-        durationMs: marchDurationMs(tile.x, tile.y, game.buildings.relay.level),
+        durationMs: marchDurationMs(1, game.buildings.relay.level),
       });
       setGame(orderMarch(game, tile.id, Date.now()));
     },
@@ -886,17 +884,17 @@ function Sandtable({
   const marchTile = march === null ? null : (game.tiles.find((tile) => tile.id === march.tileId) ?? null);
 
   /**
-   * 行軍路線。隊伍從主城一格一格走過去，走過的格子留下印子。
+   * 行軍路線：出發地 → 目標，班師時反過來。
    *
-   * 這不只是裝飾：行軍時間是用「離主城幾步」算的，讓軍隊真的走那麼多格，
-   * 那個數字才變得看得懂——遠的地方久，是因為路真的長。
-   *
-   * 班師走同一條路，只是反過來。用同一條而不是另外算一條，玩家才看得出
-   * 那是同一支隊伍在原路折返。
+   * 出兵一律從相鄰的己方領地出發，所以這條路線永遠只有兩格。原本是從主城
+   * 一路走過來的，但實測顯示那讓等待隨著版圖擴張越拖越長（見 core/march.ts）。
    */
-  const outbound = marchTile === null ? [] : marchPath(marchTile.x, marchTile.y);
-  const path = march?.heading === "home" ? [...outbound].reverse() : outbound;
-  const head = march === null ? -1 : marchHeadIndex(path, marchProgress(march, now));
+  const path =
+    march === null
+      ? []
+      : march.heading === "home"
+        ? [march.tileId, march.fromTileId]
+        : [march.fromTileId, march.tileId];
   const grid = useRef<HTMLDivElement>(null);
   const centers = useTileCenters(grid);
   const arrived = march !== null && now >= march.arrivesAt;
@@ -912,20 +910,16 @@ function Sandtable({
           ref={grid}
           className="sandtable relative grid w-full max-w-lg grid-cols-6 gap-1 border-2 border-rule-strong bg-paper-sunk p-1.5 lg:w-[30rem]"
         >
-          {game.tiles.map((tile) => {
-            const step = path.indexOf(tile.id);
-            return (
-              <TileButton
-                key={tile.id}
-                tile={tile}
-                marchable={marchBlockedReason(game, tile.id) === null}
-                selected={selected?.id === tile.id}
-                onRoute={step > 0 && step <= head}
-                targeted={march?.heading === "out" && march.tileId === tile.id && !arrived}
-                onSelect={onSelect}
-              />
-            );
-          })}
+          {game.tiles.map((tile) => (
+            <TileButton
+              key={tile.id}
+              tile={tile}
+              marchable={marchBlockedReason(game, tile.id) === null}
+              selected={selected?.id === tile.id}
+              targeted={march?.heading === "out" && march.tileId === tile.id && !arrived}
+              onSelect={onSelect}
+            />
+          ))}
 
           {march !== null && (
             <MarchColumn march={march} path={path} centers={centers} arrived={arrived} now={now} />
@@ -1049,7 +1043,7 @@ function TileDetail({
           </dt>
           <dd className="font-mono text-lg tabular-nums text-ink-soft">
             {t("march.seconds", {
-              seconds: seconds(marchDurationMs(tile.x, tile.y, game.buildings.relay.level)),
+              seconds: seconds(marchDurationMs(1, game.buildings.relay.level)),
             })}
           </dd>
         </div>
@@ -1085,7 +1079,6 @@ function TileButton({
   marchable,
   selected,
   targeted,
-  onRoute,
   onSelect,
 }: {
   tile: Tile;
@@ -1093,8 +1086,6 @@ function TileButton({
   selected: boolean;
   /** 軍隊正在往這裡去（還沒到）。 */
   targeted: boolean;
-  /** 隊伍已經走過這一格。 */
-  onRoute: boolean;
   onSelect: (tile: Tile) => void;
 }) {
   const owned = tile.owned;
@@ -1115,9 +1106,9 @@ function TileButton({
           : marchable
             ? "border-rule-strong bg-paper hover:bg-paper-raised"
             : "border-rule bg-paper-sunk opacity-45"
-      } ${onRoute ? "route opacity-100" : ""} ${
-        targeted ? "animate-target border-bronze bg-paper opacity-100" : ""
-      } ${selected ? "outline outline-2 outline-offset-2 outline-vermilion" : ""}`}
+      } ${targeted ? "animate-target border-bronze bg-paper opacity-100" : ""} ${
+        selected ? "outline outline-2 outline-offset-2 outline-vermilion" : ""
+      }`}
     >
       <span className={`font-display text-xl font-bold leading-none ${owned ? "animate-banner" : ""}`}>
         {terrainMark(tile.terrain)}

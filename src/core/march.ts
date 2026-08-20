@@ -1,6 +1,6 @@
 import { marchSpeedFactor } from './buildings';
 import { MARCH_BASE_MS, MARCH_MS_PER_STEP } from './config';
-import { distanceFromCity, type TileId } from './map';
+import type { TileId } from './map';
 
 /**
  * 行軍。
@@ -19,11 +19,18 @@ import { distanceFromCity, type TileId } from './map';
  * 停在「已抵達，等你接敵」才是回來的理由——那正是這一刀要驗的感覺。
  * 附帶好處是不必寫一個由計時器觸發的副作用，抵達只是一個看時間算出來的狀態。
  *
- * ## 為什麼時間看的是離主城多遠，不是地格等級
+ * ## 為什麼時間看的是「離最近的己方領地多遠」
  *
- * 出兵一律從相鄰的己方領地出發，所以「走幾格」永遠是一格，拿來算沒有意義。
- * 離主城的距離才是補給線的長度：越往外推，一趟越久。這跟等級同方向
- * （等級也是距離算出來的），但講的是不同的事——一個是仗難打，一個是路難走。
+ * 一開始是用「離主城多遠」算的，因為那樣畫面上的隊伍會真的走很多格，
+ * 那個數字才看得懂。實測（2026-08-15）打臉了這個選擇：一場 232 秒的遊玩裡
+ * **有 161 秒在看小人走路**，而且會越來越糟——行軍從 9 秒一路長到 25 秒，
+ * 推算打完 35 塊地光走路要 15 分鐘。
+ *
+ * 現在改成從最近的己方領地出發。合法目標一定跟己方領地相鄰，所以那個距離
+ * 永遠是一格，行軍時間變成固定值，不會隨擴張惡化。
+ *
+ * 代價是「遠的地方久」這條規則沒了，畫面上的隊伍也只走一格。那是換來的：
+ * 等待時間不該隨著玩家玩得越好而越長。
  */
 
 /**
@@ -37,6 +44,8 @@ export type Heading = 'out' | 'home';
 export interface March {
   /** 去程是目標，回程是從哪裡撤回來的。兩者都是同一塊地。 */
   readonly tileId: TileId;
+  /** 出發的那塊己方領地。回程走回這裡，畫面上的隊伍也從這裡起步。 */
+  readonly fromTileId: TileId;
   readonly departedAt: number;
   readonly arrivesAt: number;
   readonly heading: Heading;
@@ -51,43 +60,50 @@ export interface March {
  */
 export const RETURN_RATIO = 0.5;
 
-/** 走一趟要多久。core 不能自己取時間，所以這裡只回傳長度。 */
-export function marchDurationMs(tileX: number, tileY: number, relayLevel: number): number {
-  const base = MARCH_BASE_MS + MARCH_MS_PER_STEP * distanceFromCity(tileX, tileY);
+/**
+ * 走一趟要多久。core 不能自己取時間，所以這裡只回傳長度。
+ *
+ * `steps` 是出發地到目標的格數。合法的出兵永遠是一格，但公式留著吃參數——
+ * 之後如果做「跨過自己的領地去打遠處」，這裡不用重寫。
+ */
+export function marchDurationMs(steps: number, relayLevel: number): number {
+  const base = MARCH_BASE_MS + MARCH_MS_PER_STEP * Math.max(1, steps);
   return Math.round(base * marchSpeedFactor(relayLevel));
 }
 
-export function returnDurationMs(tileX: number, tileY: number, relayLevel: number): number {
-  return Math.round(marchDurationMs(tileX, tileY, relayLevel) * RETURN_RATIO);
+export function returnDurationMs(steps: number, relayLevel: number): number {
+  return Math.round(marchDurationMs(steps, relayLevel) * RETURN_RATIO);
 }
 
 export function startMarch(
   tileId: TileId,
-  tileX: number,
-  tileY: number,
+  fromTileId: TileId,
+  steps: number,
   relayLevel: number,
   now: number,
 ): March {
   return {
     tileId,
+    fromTileId,
     departedAt: now,
-    arrivesAt: now + marchDurationMs(tileX, tileY, relayLevel),
+    arrivesAt: now + marchDurationMs(steps, relayLevel),
     heading: 'out',
   };
 }
 
-/** 打完之後從那塊地走回主城。 */
+/** 打完之後從那塊地走回出發地。 */
 export function startReturn(
   tileId: TileId,
-  tileX: number,
-  tileY: number,
+  fromTileId: TileId,
+  steps: number,
   relayLevel: number,
   now: number,
 ): March {
   return {
     tileId,
+    fromTileId,
     departedAt: now,
-    arrivesAt: now + returnDurationMs(tileX, tileY, relayLevel),
+    arrivesAt: now + returnDurationMs(steps, relayLevel),
     heading: 'home',
   };
 }
