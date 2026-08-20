@@ -1,4 +1,5 @@
 import { BUILDING_IDS, createBuildings, maxLevelOf, type Building, type Buildings } from './buildings';
+import { MORALE_FLOOR, MORALE_FULL } from './config';
 import type { GameState, GameStatus } from './game';
 import { createMap, type Tile } from './map';
 import type { March } from './march';
@@ -34,10 +35,11 @@ import { RULES_VERSION, type RulesVersion } from './rules';
  *
  * 2：行軍加了 heading（出征／班師）。
  * 3：行軍加了 fromTileId（從哪出發）。
- * 4：局面多了 armyAt（隊伍閒著時站在哪）。打完不再自動班師，隊伍的位置
- *    變成局面的一部分——舊存檔沒有它，隊伍會不知道自己在哪。
+ * 4：局面多了 armyAt（隊伍閒著時站在哪）。
+ * 5：局面多了 morale（士氣）。舊存檔沒有它，讀進來會是 undefined，
+ *    傷害算出來會是 NaN——而 NaN 不會報錯，只會讓每一擊都變成 0。
  */
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export interface SaveEnvelope {
   readonly saveVersion: number;
@@ -213,6 +215,12 @@ export function readSave(raw: string | null): LoadResult {
     return { ok: false, reason: 'corrupt' };
   }
 
+  // 士氣夾在合法區間。存檔給了 0 的話每一擊都會是 0 傷害——
+  // 那是一場永遠打不完的仗，而且不會有任何錯誤訊息。
+  if (!finiteNumber(state.morale) || state.morale < MORALE_FLOOR || state.morale > MORALE_FULL) {
+    return { ok: false, reason: 'corrupt' };
+  }
+
   const march = readMarch(state.march, tiles);
   if (march === 'invalid') {
     return { ok: false, reason: 'corrupt' };
@@ -241,6 +249,7 @@ export function readSave(raw: string | null): LoadResult {
       grain: state.grain,
       buildings,
       armyAt: army.id,
+      morale: state.morale,
       march,
       battle: null,
       battlesStarted: state.battlesStarted,

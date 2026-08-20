@@ -111,8 +111,8 @@ describe('版本', () => {
     expect(readSave('')).toEqual({ ok: false, reason: 'empty' });
   });
 
-  it('目前的存檔版本是 4——局面多了隊伍的位置', () => {
-    expect(SAVE_VERSION).toBe(4);
+  it('目前的存檔版本是 5——局面多了士氣', () => {
+    expect(SAVE_VERSION).toBe(5);
   });
 
   it('外殼形狀變了就作廢', () => {
@@ -230,6 +230,18 @@ describe('壞掉的存檔一律作廢，不會讓遊戲掛掉', () => {
     },
     '隊伍站在不是自己的地上——那個局面在規則裡到不了': (state) => {
       state.armyAt = FAR;
+    },
+    '沒有士氣': (state) => {
+      delete state.morale;
+    },
+    '士氣是 0——每一擊都會是 0 傷害，那是一場打不完的仗': (state) => {
+      state.morale = 0;
+    },
+    '士氣超過滿值': (state) => {
+      state.morale = 1.5;
+    },
+    '士氣低於下限——低於下限就可能出現贏不了的仗': (state) => {
+      state.morale = 0.1;
     },
   };
 

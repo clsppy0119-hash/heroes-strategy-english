@@ -4,6 +4,8 @@ import {
   CRIT_BASE,
   CRIT_MAX,
   CRIT_STEP,
+  MORALE_FLOOR,
+  MORALE_FULL,
   START_TROOPS,
   requiredCorrect,
   roundsFor,
@@ -23,6 +25,17 @@ import {
  * 而且沒有任何東西保證我算對。現在規則是唯一真實來源，數值是它的結果。
  */
 
+/**
+ * 一擊打多少。
+ *
+ * **傷害只有這一個公式。** 之前它被抄在五個地方（結算、預覽、兩個上下界、
+ * 推導），加士氣的時候只要漏掉其中一個，畫面上的預覽就會跟實際結算對不起來
+ * ——而那種錯不會報錯，只會讓玩家覺得數字在騙人。
+ */
+export function strikeDamage(troops: number, streak: number, morale: number): number {
+  return Math.floor(troops * BASE_DAMAGE_RATE * multiplierFor(streak) * morale);
+}
+
 export function multiplierFor(streak: number): number {
   if (streak <= 0) {
     return 1;
@@ -31,14 +44,14 @@ export function multiplierFor(streak: number): number {
 }
 
 /** 一整條作答序列打出的總傷害。true＝答對，false＝答錯或跳過。 */
-function totalDamage(level: number, answers: readonly boolean[]): number {
+function totalDamage(level: number, answers: readonly boolean[], morale: number): number {
   const counter = counterFor(level);
   let troops = START_TROOPS;
   let streak = 0;
   let total = 0;
   for (const correct of answers) {
     streak = correct ? streak + 1 : Math.max(0, streak - 1);
-    total += Math.floor(troops * BASE_DAMAGE_RATE * multiplierFor(streak));
+    total += strikeDamage(troops, streak, morale);
     troops -= counter;
     if (troops <= 0) {
       break;
@@ -64,16 +77,33 @@ export function counterFor(level: number): number {
   return counter;
 }
 
+/**
+ * 推導守軍血量。
+ *
+ * ## 士氣讓「在什麼條件下推導」變成一個選擇
+ *
+ * 士氣會等比降低傷害，所以通關規則不可能在所有士氣下都剛好成立。兩種等級
+ * 分開處理：
+ *
+ * - **requiredCorrect 為 0 的等級（LV.1）按最低士氣推導。** 那是入門坡，
+ *   「跳過也拿得下」必須永遠成立，不能因為玩家遠征太久就消失。
+ * - **其餘等級按滿士氣推導。** 通關規則在滿士氣時剛好成立；士氣低就要多
+ *   答對幾題。那正是士氣要做到的事——遠征需要更好的表現。
+ *
+ * 兩種情況都受同一條保證：最低士氣下全部答對仍然打得贏（見 assertWinnable）。
+ * 沒有那條保證，遠征夠久就會出現數學上贏不了的仗——v0.1 實測的根因（#14）。
+ */
 function derive(level: number): number {
   const rounds = roundsFor(level);
   const need = requiredCorrect(level);
+  const morale = need === 0 ? MORALE_FLOOR : MORALE_FULL;
 
   let minPass = Number.POSITIVE_INFINITY;
   let maxFail = Number.NEGATIVE_INFINITY;
 
   for (const answers of allSequences(rounds)) {
     const correct = answers.filter(Boolean).length;
-    const damage = totalDamage(level, answers);
+    const damage = totalDamage(level, answers, morale);
     if (correct >= need) {
       minPass = Math.min(minPass, damage);
     } else {
@@ -96,6 +126,23 @@ function derive(level: number): number {
   return minPass;
 }
 
+/**
+ * 最低士氣下全部答對還打不打得贏。
+ *
+ * 打不贏的話玩家會卡在一場數學上贏不了的仗裡，而那不會有任何錯誤訊息——
+ * 所以在載入時就驗，並且指名該調哪個常數。
+ */
+function assertWinnable(level: number, hp: number): void {
+  const allCorrect = Array.from({ length: roundsFor(level) }, () => true);
+  const best = totalDamage(level, allCorrect, MORALE_FLOOR);
+  if (best < hp) {
+    throw new Error(
+      `LV.${level}: at the morale floor (${MORALE_FLOOR}) even a perfect run deals ${best}, ` +
+        `short of ${hp}. Raise MORALE_FLOOR or lower the defender.`,
+    );
+  }
+}
+
 const CACHE = new Map<number, number>();
 
 /** 守軍血量。第一次呼叫時推導並快取；推導不出來就丟錯。 */
@@ -105,6 +152,7 @@ export function defenderHpFor(level: number): number {
     return cached;
   }
   const hp = derive(level);
+  assertWinnable(level, hp);
   CACHE.set(level, hp);
   return hp;
 }

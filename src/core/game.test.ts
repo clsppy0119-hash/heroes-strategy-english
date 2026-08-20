@@ -4,7 +4,14 @@ import type { RoundQuestion } from './battle';
 
 const T0 = 1_700_000_000_000;
 import { createBuildings, maxLevelOf, upgradeCost, upgradeMs } from './buildings';
-import { GRAIN_PER_BATTLE, MARCH_COST, MAX_ROUNDS, START_GRAIN } from './config';
+import {
+  GRAIN_PER_BATTLE,
+  MARCH_COST,
+  MAX_ROUNDS,
+  MORALE_FLOOR,
+  MORALE_FULL,
+  START_GRAIN,
+} from './config';
 import {
   answerRound,
   armyAtCapital,
@@ -15,6 +22,7 @@ import {
   isUnderConstruction,
   marchBlockedReason,
   marchHasArrived,
+  moraleAfter,
   orderMarch,
   orderReturn,
   ownedCount,
@@ -222,6 +230,54 @@ describe('行軍', () => {
  *
  * 這一組盯著「位置變成局面的一部分」——下一趟行軍多久看隊伍站在哪。
  */
+describe('士氣', () => {
+  it('開局滿士氣', () => {
+    expect(createGame('s', T0).morale).toBe(MORALE_FULL);
+  });
+
+  it('出兵就掉，走越遠掉越多', () => {
+    const one = orderMarch(createGame('s', T0), NEAR, T0);
+    const held = dismissBattle(winBattle(createGame('s', T0), NEAR));
+    const two = orderMarch(held, tileId(CITY_X, CITY_Y - 1), T0);
+    expect(one.morale).toBeLessThan(MORALE_FULL);
+    expect(two.morale).toBeLessThan(one.morale);
+  });
+
+  it('掉到下限就不再掉——連全對都打不贏的仗不該存在', () => {
+    let morale = MORALE_FULL;
+    for (let i = 0; i < 50; i += 1) {
+      morale = moraleAfter(morale, 3);
+    }
+    expect(morale).toBe(MORALE_FLOOR);
+  });
+
+  it('不會累積出髒的小數', () => {
+    let morale = MORALE_FULL;
+    for (let i = 0; i < 5; i += 1) {
+      morale = moraleAfter(morale, 1);
+    }
+    expect(morale).toBe(0.8);
+  });
+
+  it('鳴金把士氣也退回去——撤回的是還沒發生的命令', () => {
+    const before = createGame('s', T0);
+    const ordered = orderMarch(before, NEAR, T0);
+    expect(recallMarch(ordered).morale).toBe(before.morale);
+  });
+
+  it('回到主城補滿', () => {
+    const held = dismissBattle(winBattle(createGame('s', T0), NEAR));
+    expect(held.morale).toBeLessThan(MORALE_FULL);
+    const home = orderReturn(held, T0);
+    expect(settleTime(home, home.march!.arrivesAt).morale).toBe(MORALE_FULL);
+  });
+
+  it('開打時把當下的士氣帶進戰鬥', () => {
+    const state = engage(createGame('s', T0), NEAR);
+    expect(state.battle!.morale).toBe(moraleAfter(MORALE_FULL, 1));
+  });
+});
+
 describe('駐紮與回城', () => {
   it('一開始隊伍在主城', () => {
     const state = createGame('s', T0);

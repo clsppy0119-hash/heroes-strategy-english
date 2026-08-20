@@ -1,5 +1,5 @@
-import { BASE_DAMAGE_RATE, START_TROOPS, roundsFor } from './config';
-import { counterFor, defenderHpFor, multiplierFor } from './derive';
+import { MORALE_FLOOR, MORALE_FULL, START_TROOPS, roundsFor } from './config';
+import { counterFor, defenderHpFor, multiplierFor, strikeDamage } from './derive';
 import type { TileId } from './map';
 import { RULES_VERSION, type RulesVersion } from './rules';
 import type { RngState } from './rng';
@@ -66,6 +66,13 @@ export interface BattleState {
   readonly lossReason: LossReason | null;
   /** 這一場總共幾回合＝地格等級。 */
   readonly rounds: number;
+  /**
+   * 這一仗的士氣。傷害等比乘上它。
+   *
+   * 開打時就固定，不會在戰鬥中變——一場仗打到一半士氣掉下去的話，
+   * 玩家算好的「再答對一題就贏」會在他眼前失效。
+   */
+  readonly morale: number;
   readonly questions: readonly RoundQuestion[];
   readonly log: readonly RoundResult[];
 }
@@ -77,12 +84,18 @@ export interface StartBattleInput {
   readonly seed: RngState;
   /** 這場戰鬥可能用到的題目，最多 MAX_ROUNDS 題，由呼叫端先抽好。 */
   readonly questions: readonly RoundQuestion[];
+  /** 出兵時的士氣。 */
+  readonly morale: number;
 }
 
 export function startBattle(input: StartBattleInput): BattleState {
   const rounds = roundsFor(input.tileLevel);
   if (input.questions.length < rounds) {
     throw new RangeError(`LV.${input.tileLevel} needs ${rounds} questions, got ${input.questions.length}`);
+  }
+  // 士氣壞掉的話每一擊都會是 0 或 NaN——那是一場打不完的仗，而且不會報錯。
+  if (!Number.isFinite(input.morale) || input.morale < MORALE_FLOOR || input.morale > MORALE_FULL) {
+    throw new RangeError(`morale must be between ${MORALE_FLOOR} and ${MORALE_FULL}, got ${input.morale}`);
   }
   return {
     battleId: input.battleId,
@@ -99,6 +112,7 @@ export function startBattle(input: StartBattleInput): BattleState {
     outcome: 'ongoing',
     lossReason: null,
     rounds,
+    morale: input.morale,
     questions: input.questions.slice(0, rounds),
     log: [],
   };
@@ -118,7 +132,7 @@ export function maxRemainingDamage(battle: BattleState): number {
   let total = 0;
   for (let round = battle.round; round < battle.rounds && troops > 0; round += 1) {
     streak += 1;
-    total += Math.floor(troops * BASE_DAMAGE_RATE * multiplierFor(streak));
+    total += strikeDamage(troops, streak, battle.morale);
     troops -= counterFor(battle.tileLevel);
   }
   return total;
@@ -138,7 +152,7 @@ export function currentQuestion(battle: BattleState): RoundQuestion | undefined 
  */
 export function previewDamage(battle: BattleState, correct: boolean): number {
   const streak = correct ? battle.streak + 1 : Math.max(0, battle.streak - 1);
-  return Math.floor(battle.troops * BASE_DAMAGE_RATE * multiplierFor(streak));
+  return strikeDamage(battle.troops, streak, battle.morale);
 }
 
 /** 這一回合答對的話會是幾倍。 */
@@ -168,7 +182,7 @@ export function resolveRound(battle: BattleState, choiceIndex: number | null): B
   // 退一階而不是歸零：一次失誤付一次的代價（#14）。
   const streak = correct ? battle.streak + 1 : Math.max(0, battle.streak - 1);
   const multiplier = multiplierFor(streak);
-  const damage = Math.floor(battle.troops * BASE_DAMAGE_RATE * multiplier);
+  const damage = strikeDamage(battle.troops, streak, battle.morale);
 
   const defenderHp = battle.defenderHp - damage;
   const round = battle.round + 1;
@@ -235,7 +249,7 @@ export function minRemainingDamage(battle: BattleState): number {
   let total = 0;
   for (let round = battle.round; round < battle.rounds && troops > 0; round += 1) {
     streak = Math.max(0, streak - 1);
-    total += Math.floor(troops * BASE_DAMAGE_RATE * multiplierFor(streak));
+    total += strikeDamage(troops, streak, battle.morale);
     troops -= counterFor(battle.tileLevel);
   }
   return total;
