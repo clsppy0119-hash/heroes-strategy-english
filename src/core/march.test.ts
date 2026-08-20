@@ -2,48 +2,64 @@ import { describe, expect, it } from 'vitest';
 
 import { maxLevelOf } from './buildings';
 import { MARCH_BASE_MS, MARCH_MS_PER_STEP } from './config';
-import { CITY_X, CITY_Y, createMap, distanceFromCity } from './map';
-import { hasArrived, marchDurationMs, marchProgress, remainingMs, startMarch } from './march';
+import { CITY_X, CITY_Y, createMap, tileId } from './map';
+import {
+  RETURN_RATIO,
+  hasArrived,
+  marchDurationMs,
+  marchProgress,
+  remainingMs,
+  returnDurationMs,
+  startMarch,
+} from './march';
 
 const T0 = 1_700_000_000_000;
 
 describe('marchDurationMs', () => {
-  it('主城旁邊最快', () => {
-    expect(marchDurationMs(CITY_X + 1, CITY_Y, 0)).toBe(MARCH_BASE_MS + MARCH_MS_PER_STEP);
+  it('一格就是底數加一步', () => {
+    expect(marchDurationMs(1, 0)).toBe(MARCH_BASE_MS + MARCH_MS_PER_STEP);
   });
 
-  it('越遠越久', () => {
-    let previous = 0;
-    for (const tile of [...createMap()].sort(
-      (a, b) => distanceFromCity(a.x, a.y) - distanceFromCity(b.x, b.y),
-    )) {
-      const duration = marchDurationMs(tile.x, tile.y, 0);
-      expect(duration).toBeGreaterThanOrEqual(previous);
-      previous = duration;
-    }
+  /**
+   * 這是這次改動的重點：合法出兵永遠是一格，所以行軍時間跟目標在哪無關。
+   * 舊規則是「離主城多遠」，越往外推越久——實測一場 232 秒的遊玩裡
+   * 161 秒在走路，而且會越來越糟。
+   */
+  it('打哪一塊地都一樣久，不會隨版圖擴張變長', () => {
+    const durations = new Set(createMap().map(() => marchDurationMs(1, 0)));
+    expect(durations.size).toBe(1);
   });
 
-  it('最遠的角落也在一分鐘以內——等待不是內容', () => {
-    const longest = Math.max(...createMap().map((tile) => marchDurationMs(tile.x, tile.y, 0)));
-    expect(longest).toBeLessThan(60_000);
+  it('步數多的話還是會比較久——公式留著吃參數', () => {
+    expect(marchDurationMs(3, 0)).toBeGreaterThan(marchDurationMs(1, 0));
+  });
+
+  it('零步或負步當成一步，不會算出比零短的行軍', () => {
+    expect(marchDurationMs(0, 0)).toBe(marchDurationMs(1, 0));
+    expect(marchDurationMs(-5, 0)).toBe(marchDurationMs(1, 0));
+  });
+
+  it('一趟在一分鐘以內——等待不是內容', () => {
+    expect(marchDurationMs(1, 0)).toBeLessThan(60_000);
   });
 
   it('驛站越高走得越快，但不會快到沒有行軍這件事', () => {
-    const far = createMap().reduce((a, b) =>
-      distanceFromCity(a.x, a.y) >= distanceFromCity(b.x, b.y) ? a : b,
-    );
-    let previous = marchDurationMs(far.x, far.y, 0);
+    let previous = marchDurationMs(1, 0);
     for (let level = 1; level <= maxLevelOf('relay'); level += 1) {
-      const duration = marchDurationMs(far.x, far.y, level);
+      const duration = marchDurationMs(1, level);
       expect(duration).toBeLessThan(previous);
       previous = duration;
     }
     expect(previous).toBeGreaterThan(0);
   });
+
+  it('班師是去程的一半', () => {
+    expect(returnDurationMs(1, 0)).toBe(Math.round(marchDurationMs(1, 0) * RETURN_RATIO));
+  });
 });
 
 describe('抵達', () => {
-  const march = startMarch('3,2', 3, 2, 0, T0);
+  const march = startMarch('3,2', tileId(CITY_X, CITY_Y), 1, 0, T0);
 
   it('剛出發還沒到', () => {
     expect(hasArrived(march, T0)).toBe(false);
@@ -68,7 +84,7 @@ describe('抵達', () => {
  * 會讓長條跑到框外或倒著長，那是玩家看得到的錯。
  */
 describe('marchProgress', () => {
-  const march = startMarch('3,2', 3, 2, 0, T0);
+  const march = startMarch('3,2', tileId(CITY_X, CITY_Y), 1, 0, T0);
 
   it('出發是 0，抵達是 1', () => {
     expect(marchProgress(march, T0)).toBe(0);

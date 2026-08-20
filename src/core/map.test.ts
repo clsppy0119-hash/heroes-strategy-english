@@ -10,8 +10,7 @@ import {
   distanceFromCity,
   findTile,
   levelForDistance,
-  marchHeadIndex,
-  marchPath,
+  marchOrigin,
   marchableTiles,
   tileId,
   type Tile,
@@ -85,65 +84,50 @@ describe('等級配置站得住', () => {
 });
 
 /**
- * 行軍路線只給眼睛看，不影響任何規則。但它是行軍時間那條規則的解釋——
- * 遠的地方久，是因為路真的長。所以路線的長度必須跟距離對得上，
- * 否則畫面會在無聲地說謊。
+ * 從哪裡出發。行軍時間是用「出發地到目標」算的，所以挑錯出發地
+ * 會讓時間也錯——而那不會報錯，只會讓等待變長或變短。
  */
-describe('行軍路線', () => {
-  it('從主城出發，走到目標', () => {
-    const path = marchPath(5, 5);
-    expect(path[0]).toBe(tileId(CITY_X, CITY_Y));
-    expect(path[path.length - 1]).toBe(tileId(5, 5));
+describe('出兵的出發地', () => {
+  it('一開始只能從主城出發', () => {
+    const target = findTile(tiles, tileId(CITY_X + 1, CITY_Y))!;
+    expect(marchOrigin(tiles, target)?.id).toBe(tileId(CITY_X, CITY_Y));
   });
 
-  it('走的格數就是行軍時間用的那個距離', () => {
+  it('出發地一定跟目標相鄰', () => {
     for (const tile of tiles) {
-      expect(marchPath(tile.x, tile.y).length - 1).toBe(distanceFromCity(tile.x, tile.y));
+      const from = marchOrigin(tiles, tile);
+      if (from !== undefined) {
+        expect(Math.abs(from.x - tile.x) + Math.abs(from.y - tile.y)).toBe(1);
+      }
     }
   });
 
-  it('每一步都只走一格，不會斜著飛過去', () => {
-    const path = marchPath(0, 5).map((id) => findTile(tiles, id)!);
-    for (let i = 1; i < path.length; i += 1) {
-      expect(Math.abs(path[i].x - path[i - 1].x) + Math.abs(path[i].y - path[i - 1].y)).toBe(1);
+  it('出發地一定是自己的地', () => {
+    for (const tile of tiles) {
+      expect(marchOrigin(tiles, tile)?.owned ?? true).toBe(true);
     }
   });
 
-  it('打主城旁邊就只有兩格', () => {
-    expect(marchPath(CITY_X + 1, CITY_Y)).toHaveLength(2);
+  it('沒有相鄰的己方領地就沒有出發地', () => {
+    const corner = findTile(tiles, tileId(0, 0))!;
+    expect(marchOrigin(tiles, corner)).toBeUndefined();
   });
 
-  it('同一個目標永遠走同一條路——不然畫面每次重畫都會跳', () => {
-    expect(marchPath(4, 1)).toEqual(marchPath(4, 1));
+  /** 有好幾塊可以出發時挑離主城最近的，畫面上才像從內地往外推。 */
+  it('相鄰的己方領地不只一塊時，挑離主城最近的', () => {
+    const near = tileId(CITY_X + 1, CITY_Y); // (3,2) 離主城 1 步
+    const far = tileId(CITY_X + 2, CITY_Y - 1); // (4,1) 離主城 3 步
+    const owned = tiles.map((tile) => ([near, far].includes(tile.id) ? { ...tile, owned: true } : tile));
+
+    // (4,2) 跟兩者都相鄰。
+    const target = findTile(owned, tileId(CITY_X + 2, CITY_Y))!;
+    expect(distanceFromCity(target.x, target.y)).toBe(2);
+    expect(marchOrigin(owned, target)?.id).toBe(near);
   });
 
-  it('隊伍的位置從頭走到尾', () => {
-    const path = marchPath(5, 5);
-    expect(marchHeadIndex(path, 0.5)).toBeGreaterThan(1);
-    expect(marchHeadIndex(path, 1)).toBe(path.length - 1);
-  });
-
-  /** 下令之後畫面上要馬上有東西動，不然玩家會以為沒按到。 */
-  it('一下令隊伍就離開主城，不會停在原地', () => {
-    expect(marchHeadIndex(marchPath(5, 5), 0)).toBe(1);
-  });
-
-  it('進度超出範圍也不會走到路線外面', () => {
-    const path = marchPath(3, 2);
-    expect(marchHeadIndex(path, -5)).toBe(1);
-    expect(marchHeadIndex(path, 99)).toBe(path.length - 1);
-  });
-
-  it('隊伍一格一格前進，不會跳格', () => {
-    const path = marchPath(5, 5);
-    let previous = marchHeadIndex(path, 0);
-    for (let p = 0; p <= 1.0001; p += 0.01) {
-      const head = marchHeadIndex(path, p);
-      expect(head - previous).toBeLessThanOrEqual(1);
-      expect(head).toBeGreaterThanOrEqual(previous);
-      previous = head;
-    }
-    expect(previous).toBe(path.length - 1);
+  it('同一個局面永遠挑同一塊，隊伍不會在重畫時瞬移', () => {
+    const target = findTile(tiles, tileId(CITY_X, CITY_Y - 1))!;
+    expect(marchOrigin(tiles, target)?.id).toBe(marchOrigin(tiles, target)?.id);
   });
 });
 

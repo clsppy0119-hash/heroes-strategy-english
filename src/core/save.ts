@@ -32,10 +32,11 @@ import { RULES_VERSION, type RulesVersion } from './rules';
 /**
  * 存檔外殼的形狀版本。改變 SaveEnvelope 的結構時遞增。
  *
- * 2：行軍加了 heading（出征／班師）。舊存檔沒有這個欄位，讀進來會是一支
- * 方向不明的軍隊——與其猜，不如明確作廢。
+ * 2：行軍加了 heading（出征／班師）。
+ * 3：行軍加了 fromTileId（從哪塊己方領地出發）。舊存檔沒有這個欄位，
+ *    隊伍會不知道要走回哪裡——與其猜，不如明確作廢。
  */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export interface SaveEnvelope {
   readonly saveVersion: number;
@@ -136,15 +137,25 @@ function readMarch(value: unknown, tiles: readonly Tile[]): March | null | 'inva
   if (!isRecord(value)) {
     return 'invalid';
   }
-  const { tileId, departedAt, arrivesAt, heading } = value;
-  if (typeof tileId !== 'string' || !nonNegative(departedAt) || !nonNegative(arrivesAt)) {
+  const { tileId, fromTileId, departedAt, arrivesAt, heading } = value;
+  if (
+    typeof tileId !== 'string' ||
+    typeof fromTileId !== 'string' ||
+    !nonNegative(departedAt) ||
+    !nonNegative(arrivesAt)
+  ) {
     return 'invalid';
   }
   if (heading !== 'out' && heading !== 'home') {
     return 'invalid';
   }
   const target = tiles.find((tile) => tile.id === tileId);
-  if (target === undefined || arrivesAt < departedAt) {
+  const from = tiles.find((tile) => tile.id === fromTileId);
+  if (target === undefined || from === undefined || arrivesAt < departedAt) {
+    return 'invalid';
+  }
+  // 出發地必須是自己的地，否則隊伍會從敵區冒出來、也走不回去。
+  if (!from.owned) {
     return 'invalid';
   }
   // 去程打的地不能已經是自己的；回程正好相反——剛打贏的那塊地本來就是自己的了，
@@ -152,7 +163,7 @@ function readMarch(value: unknown, tiles: readonly Tile[]): March | null | 'inva
   if (heading === 'out' && target.owned) {
     return 'invalid';
   }
-  return { tileId, departedAt, arrivesAt, heading };
+  return { tileId, fromTileId, departedAt, arrivesAt, heading };
 }
 
 /**
