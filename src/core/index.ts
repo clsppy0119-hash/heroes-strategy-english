@@ -35,6 +35,9 @@ export {
   MARCH_COST,
   MARCH_MS_PER_STEP,
   MAX_OFFLINE_MS,
+  MORALE_COST_PER_STEP,
+  MORALE_FLOOR,
+  MORALE_FULL,
   MAX_LEVEL,
   MAX_ROUNDS,
   START_GRAIN,
@@ -44,7 +47,7 @@ export {
   vocabLevelForTile,
 } from './config';
 
-export { counterFor, defenderHpFor } from './derive';
+export { counterFor, defenderHpFor, strikeDamage } from './derive';
 
 export {
   BUILDING_IDS,
@@ -128,6 +131,7 @@ export {
   isUnderConstruction,
   marchBlockedReason,
   marchHasArrived,
+  moraleAfter,
   orderMarch,
   orderReturn,
   ownedCount,

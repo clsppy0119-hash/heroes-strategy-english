@@ -9,7 +9,14 @@ import {
   type BuildingId,
   type Buildings,
 } from './buildings';
-import { GRAIN_PER_BATTLE, MARCH_COST, START_GRAIN } from './config';
+import {
+  GRAIN_PER_BATTLE,
+  MARCH_COST,
+  MORALE_COST_PER_STEP,
+  MORALE_FLOOR,
+  MORALE_FULL,
+  START_GRAIN,
+} from './config';
 import { accrueGrain } from './time';
 import {
   abandonBattle,
@@ -61,6 +68,12 @@ export interface GameState {
    * 所以位置變成局面的一部分：下一趟行軍多久，看的是從這裡走到目標多遠。
    */
   readonly armyAt: TileId;
+  /**
+   * 士氣。傷害等比乘上它，回到主城補滿。
+   *
+   * 這是「回城」唯一的實質理由——在這之前回城只換位置，換不到任何東西。
+   */
+  readonly morale: number;
   /** 在路上的那支軍隊。抵達之後還是留在這裡，等玩家按「接敵」才轉成戰鬥。 */
   readonly march: March | null;
   readonly battle: BattleState | null;
@@ -81,6 +94,7 @@ export function createGame(seedText: string, now: number): GameState {
     grain: START_GRAIN,
     buildings: createBuildings(),
     armyAt: tileId(CITY_X, CITY_Y),
+    morale: MORALE_FULL,
     march: null,
     battle: null,
     battlesStarted: 0,
@@ -166,6 +180,8 @@ export function settleTime(state: GameState, now: number): GameState {
   return {
     ...current,
     armyAt: home ? current.march!.tileId : current.armyAt,
+    // 進了城就補滿。這是回城唯一換得到的東西。
+    morale: home ? MORALE_FULL : current.morale,
     march: home ? null : current.march,
     // 補算完可能就有糧再出兵了，卡住的狀態要跟著解除。
     status: current.status === 'stuck' && current.grain >= MARCH_COST ? 'playing' : current.status,
@@ -310,10 +326,14 @@ export function orderMarch(state: GameState, id: TileId, now: number): GameState
     throw new Error(`army is nowhere: ${state.armyAt}`);
   }
 
+  const steps = stepsBetween(from, tile);
+
   return {
     ...state,
     grain: state.grain - MARCH_COST,
-    march: startMarch(id, from.id, stepsBetween(from, tile), state.buildings.relay.level, now),
+    // 走越遠掉越多。掉在下令的那一刻，玩家才看得出「這一趟值不值」。
+    morale: moraleAfter(state.morale, steps),
+    march: startMarch(id, from.id, steps, state.buildings.relay.level, now),
   };
 }
 
@@ -328,10 +348,32 @@ export function orderMarch(state: GameState, id: TileId, now: number): GameState
  * 班師的時間留給真正打過的那一趟。
  */
 export function recallMarch(state: GameState): GameState {
-  if (state.march === null || state.march.heading !== 'out') {
+  const march = state.march;
+  if (march === null || march.heading !== 'out') {
     return state;
   }
-  return { ...state, grain: state.grain + MARCH_COST, march: null };
+  const from = findTile(state.tiles, march.fromTileId);
+  const to = findTile(state.tiles, march.tileId);
+  const steps = from === undefined || to === undefined ? 0 : stepsBetween(from, to);
+  return {
+    ...state,
+    grain: state.grain + MARCH_COST,
+    // 士氣也一起退回去。撤回的是一個還沒發生的命令，不該留下代價。
+    morale: Math.min(MORALE_FULL, Math.round((state.morale + MORALE_COST_PER_STEP * steps) * 10_000) / 10_000),
+    march: null,
+  };
+}
+
+/**
+ * 走了幾步之後剩多少士氣。夾在下限，因為連全對都打不贏的仗不該存在。
+ *
+ * 四捨五入到小數第四位：0.04 一次次減下去會累積成 0.9199999999999999，
+ * 那個數字會被原封不動寫進存檔。畫面上看不出差別，但存檔裡的數字
+ * 沒理由是髒的，而且之後任何等值比較都會被它咬一口。
+ */
+export function moraleAfter(morale: number, steps: number): number {
+  const next = morale - MORALE_COST_PER_STEP * Math.max(0, steps);
+  return Math.max(MORALE_FLOOR, Math.round(next * 10_000) / 10_000);
 }
 
 /** 隊伍在主城裡。回城鍵要不要出現看這個。 */
@@ -406,6 +448,7 @@ export function engageBattle(state: GameState, questions: readonly RoundQuestion
       tileLevel: tile.level,
       seed: battleSeed(state, tile.id),
       questions,
+      morale: state.morale,
     }),
   };
 }

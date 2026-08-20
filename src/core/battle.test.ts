@@ -12,8 +12,19 @@ import {
   type BattleState,
   type RoundQuestion,
 } from './battle';
-import { CRIT_BASE, CRIT_MAX, CRIT_STEP, START_TROOPS, requiredCorrect, roundsFor } from './config';
+import {
+  CRIT_BASE,
+  CRIT_MAX,
+  CRIT_STEP,
+  MORALE_FLOOR,
+  MORALE_FULL,
+  START_TROOPS,
+  requiredCorrect,
+  roundsFor,
+} from './config';
 import { counterFor, multiplierFor } from './derive';
+
+const MAX_LEVEL_FOR_TEST = 3;
 
 const questions: RoundQuestion[] = Array.from({ length: 6 }, (_, i) => ({
   id: `q${i}`,
@@ -21,8 +32,8 @@ const questions: RoundQuestion[] = Array.from({ length: 6 }, (_, i) => ({
   choiceCount: 4,
 }));
 
-const battleAt = (tileLevel: number): BattleState =>
-  startBattle({ battleId: 'b1', tileId: '1,0', tileLevel, seed: 42, questions });
+const battleAt = (tileLevel: number, morale = MORALE_FULL): BattleState =>
+  startBattle({ battleId: 'b1', tileId: '1,0', tileLevel, seed: 42, questions, morale });
 
 /** answers[i] 是第 i 回合的作答：1＝答對，0＝答錯，null＝跳過。 */
 function play(tileLevel: number, answers: readonly (number | null)[]): BattleState {
@@ -219,7 +230,14 @@ describe('回合結算', () => {
 
   it('題目不夠這個等級的回合數就不給開打', () => {
     expect(() =>
-      startBattle({ battleId: 'b', tileId: '0,0', tileLevel: 3, seed: 1, questions: questions.slice(0, 2) }),
+      startBattle({
+        battleId: 'b',
+        tileId: '0,0',
+        tileLevel: 3,
+        seed: 1,
+        questions: questions.slice(0, 2),
+        morale: MORALE_FULL,
+      }),
     ).toThrow(RangeError);
   });
 });
@@ -274,5 +292,44 @@ describe('currentQuestion', () => {
 
   it('結束後回傳 undefined', () => {
     expect(currentQuestion(play(1, skips(1)))).toBeUndefined();
+  });
+});
+
+/**
+ * 士氣。傷害等比降低，但通關規則不能因此變成「打不贏」——
+ * derive.ts 在載入時就驗過最低士氣下全對仍然打得贏。
+ */
+describe('士氣', () => {
+  it('士氣低，同一擊打得比較少', () => {
+    const full = battleAt(3, MORALE_FULL);
+    const low = battleAt(3, MORALE_FLOOR);
+    expect(previewDamage(low, true)).toBeLessThan(previewDamage(full, true));
+  });
+
+  it('預覽跟實際結算是同一個數字——不然畫面在騙人', () => {
+    const battle = battleAt(3, MORALE_FLOOR);
+    const preview = previewDamage(battle, true);
+    expect(resolveRound(battle, 1).log[0].damage).toBe(preview);
+  });
+
+  it('最低士氣下全部答對還是拿得下——任何等級都不能有贏不了的仗', () => {
+    for (let level = 1; level <= MAX_LEVEL_FOR_TEST; level += 1) {
+      const answers = Array.from({ length: level }, () => 1);
+      let battle = battleAt(level, MORALE_FLOOR);
+      for (const answer of answers) {
+        if (battle.outcome !== 'ongoing') {
+          break;
+        }
+        battle = resolveRound(battle, answer);
+      }
+      expect(battle.outcome, `LV.${level}`).toBe('won');
+    }
+  });
+
+  it('士氣壞掉就丟錯，而不是安靜地打出 0 傷害', () => {
+    const bad = { battleId: 'b', tileId: 'x', tileLevel: 1, seed: 1, questions };
+    expect(() => startBattle({ ...bad, morale: Number.NaN })).toThrow(RangeError);
+    expect(() => startBattle({ ...bad, morale: 0 })).toThrow(RangeError);
+    expect(() => startBattle({ ...bad, morale: 2 })).toThrow(RangeError);
   });
 });

@@ -17,6 +17,7 @@ import {
   BUILDING_IDS,
   GRID_SIZE,
   MARCH_COST,
+  MORALE_FULL,
   RULES_VERSION,
   START_TROOPS,
   answerRound,
@@ -37,6 +38,7 @@ import {
   marchHasArrived,
   marchProgress,
   maxLevelOf,
+  moraleAfter,
   msPerGrain,
   orderMarch,
   orderReturn,
@@ -584,6 +586,7 @@ export function Campaign() {
         grain={game.grain}
         grainRate={Math.round(grainPerHour(ownedCount(game), game.buildings.farm.level))}
         captured={capturedCount(game)}
+        morale={game.morale}
         onExport={exportRecords}
       />
 
@@ -811,11 +814,13 @@ function Header({
   grain,
   grainRate,
   captured,
+  morale,
   onExport,
 }: {
   grain: number;
   grainRate: number;
   captured: number;
+  morale: number;
   onExport: () => void;
 }) {
   return (
@@ -838,6 +843,12 @@ function Header({
             value={t("campaign.capturedValue", { captured, total: TOTAL_TILES })}
             tone="vermilion"
           />
+          <Stat
+            label={t("campaign.morale")}
+            value={t("campaign.moraleValue", { percent: Math.round(morale * 100) })}
+            note={morale < MORALE_FULL ? t("campaign.moraleWorn") : undefined}
+            tone="moss"
+          />
         </dl>
         <div className="flex items-center gap-4 font-mono text-[11px] text-ink-soft">
           <span>{t("campaign.rules", { version: RULES_VERSION })}</span>
@@ -859,14 +870,14 @@ function Stat({
   label: string;
   value: string;
   note?: string;
-  tone: "bronze" | "vermilion";
+  tone: "bronze" | "vermilion" | "moss";
 }) {
   return (
     <div className="flex flex-col gap-0.5">
       <dt className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-soft">{label}</dt>
       <dd
         className={`font-display text-2xl font-bold tabular-nums ${
-          tone === "bronze" ? "text-bronze" : "text-vermilion"
+          tone === "bronze" ? "text-bronze" : tone === "moss" ? "text-moss" : "text-vermilion"
         }`}
       >
         {value}
@@ -1034,6 +1045,7 @@ function TileDetail({
     <div className="flex flex-col gap-2 border-t border-rule pt-3">
       <p className="font-mono text-[11px] text-ink-soft">
         {t("army.inField", { terrain: army === undefined ? "" : terrainName(army.terrain) })}
+        {game.morale < MORALE_FULL && t("army.moraleHint")}
       </p>
       <button
         type="button"
@@ -1088,6 +1100,17 @@ function TileDetail({
           <dd className="font-mono text-lg tabular-nums text-ink-soft">
             {t("march.seconds", {
               seconds: seconds(marchDurationMs(steps, game.buildings.relay.level)),
+            })}
+          </dd>
+        </div>
+        {/* 代價寫在按之前：這一趟會把士氣打到哪裡。 */}
+        <div className="flex flex-col gap-0.5">
+          <dt className="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-soft">
+            {t("campaign.morale")}
+          </dt>
+          <dd className="font-mono text-lg tabular-nums text-moss">
+            {t("campaign.moraleValue", {
+              percent: Math.round(moraleAfter(game.morale, steps) * 100),
             })}
           </dd>
         </div>
